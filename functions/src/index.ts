@@ -396,7 +396,6 @@ export const recordPuzzleHistory = onCall(
                     if (!existing) {
                         newDiffObj = {
                             attempts: difficultyAttemptNumber,
-                            totalAttempts: difficultyAttemptNumber,
                             lowestMovesAttemptNumber: null,
                             moves,
                             firstTry: false,
@@ -1018,7 +1017,6 @@ export const getDailyScoresV2Stats = onCall(
 // --- New: Get Win Modal Stats ---
 interface GetWinModalStatsRequest {
     puzzleId: string;
-    difficulty: DifficultyLevel | "easy" | "medium" | "hard";
 }
 
 export const getWinModalStats = onCall(
@@ -1032,52 +1030,59 @@ export const getWinModalStats = onCall(
             throw new HttpsError("unauthenticated", "Authentication required.");
         }
         const userId = request.auth.uid;
-        const { puzzleId, difficulty } = (request.data || {}) as GetWinModalStatsRequest;
-        if (!puzzleId || !difficulty) {
-            throw new HttpsError("invalid-argument", "puzzleId and difficulty are required.");
+        const { puzzleId } = (request.data || {}) as GetWinModalStatsRequest;
+        if (!puzzleId) {
+            throw new HttpsError("invalid-argument", "puzzleId is required.");
         }
-
-        const normalizedDifficulty = normalizeDifficulty(difficulty);
 
         try {
             const userHistoryRef = db.collection("userPuzzleHistory").doc(userId);
             const puzzleRef = userHistoryRef.collection("puzzles").doc(puzzleId);
             const levelAgnosticRef = userHistoryRef.collection("leaderboard").doc("levelAgnostic");
-            const difficultyRef = userHistoryRef.collection("leaderboard").doc(normalizedDifficulty);
+            const easyRef = userHistoryRef.collection("leaderboard").doc("easy");
+            const mediumRef = userHistoryRef.collection("leaderboard").doc("medium");
+            const hardRef = userHistoryRef.collection("leaderboard").doc("hard");
 
-            const [puzzleSnap, laSnap, diffSnap] = await Promise.all([
+            const [puzzleSnap, laSnap, easySnap, mediumSnap, hardSnap] = await Promise.all([
                 puzzleRef.get(),
                 levelAgnosticRef.get(),
-                difficultyRef.get(),
+                easyRef.get(),
+                mediumRef.get(),
+                hardRef.get(),
             ]);
 
-            const totalAttempts = puzzleSnap.exists && typeof (puzzleSnap.data() as any)?.totalAttempts === 'number'
-                ? (puzzleSnap.data() as any).totalAttempts
-                : null;
-
+            const puzzleData = puzzleSnap.exists ? puzzleSnap.data() as any : null;
             const laData = laSnap.exists ? (laSnap.data() as any) : {};
-            const dData = diffSnap.exists ? (diffSnap.data() as any) : {};
 
             const currentPuzzleCompletedStreak = typeof laData.currentPuzzleCompletedStreak === 'number'
                 ? laData.currentPuzzleCompletedStreak
                 : null;
 
-            const currentTieBotStreak = typeof dData.currentTieBotStreak === 'number'
-                ? dData.currentTieBotStreak
+            const lastPuzzleCompletedDate = typeof laData.lastPuzzleCompletedDate === 'string'
+                ? laData.lastPuzzleCompletedDate
                 : null;
 
-            const currentFirstTryStreak = typeof dData.currentFirstTryStreak === 'number'
-                ? dData.currentFirstTryStreak
-                : null;
+            const buildDifficultyStats = (difficultySnap: any, difficulty: string) => {
+                const dData = difficultySnap.exists ? (difficultySnap.data() as any) : {};
+                const difficultyData = puzzleData?.[difficulty];
+
+                return {
+                    lastTieBotDate: typeof dData.lastTieBotDate === 'string' ? dData.lastTieBotDate : null,
+                    currentTieBotStreak: typeof dData.currentTieBotStreak === 'number' ? dData.currentTieBotStreak : null,
+                    lastFirstTryDate: typeof dData.lastFirstTryDate === 'string' ? dData.lastFirstTryDate : null,
+                    currentFirstTryStreak: typeof dData.currentFirstTryStreak === 'number' ? dData.currentFirstTryStreak : null,
+                    attempts: difficultyData && typeof difficultyData.attempts === 'number' ? difficultyData.attempts : null,
+                };
+            };
 
             return {
                 success: true,
                 stats: {
-                    totalAttempts,
+                    lastPuzzleCompletedDate,
                     currentPuzzleCompletedStreak,
-                    currentTieBotStreak,
-                    currentFirstTryStreak,
-                    difficulty: normalizedDifficulty,
+                    easy: buildDifficultyStats(easySnap, 'easy'),
+                    medium: buildDifficultyStats(mediumSnap, 'medium'),
+                    hard: buildDifficultyStats(hardSnap, 'hard'),
                 }
             };
         } catch (e) {
@@ -1138,7 +1143,7 @@ export const getPersonalStats = onCall(
                 bestEloScore: typeof laData.eloScoreByDay?.[puzzleId] === 'number' 
                     ? laData.eloScoreByDay[puzzleId] 
                     : null,
-                totalAttempts: typeof diffData.attempts === 'number' 
+                difficultyAttempts: typeof diffData.attempts === 'number' 
                     ? diffData.attempts 
                     : null,
                 fewestMoves: typeof diffData.moves === 'number' 
@@ -1570,14 +1575,18 @@ export const sendDailyPuzzleReminders = onSchedule(
                     if (dailyScoresSnap.exists) {
                         const data = dailyScoresSnap.data();
 
-                        // Collect user IDs from all difficulties
+                        // Count all entries from all difficulties
                         for (const difficulty of ["easy", "medium", "hard"]) {
                             const diffData = data?.[difficulty];
                             if (diffData && typeof diffData === "object") {
+                                // Add to unique set for device check
                                 Object.keys(diffData).forEach(uid => uniquePlayerIds.add(uid));
+                                // Count all entries for total players
+                                todaysTotalPlayers += Object.keys(diffData).length;
+                                // If you want to just count unique ids
+                                // todaysTotalPlayers = uniquePlayerIds.size;
                             }
                         }
-                        todaysTotalPlayers = uniquePlayerIds.size;
                     }
 
                     // Check if ANY user on this device has already played today's puzzle
