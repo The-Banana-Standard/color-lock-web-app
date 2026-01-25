@@ -8,7 +8,8 @@ import {
     getPersonalStatsCallable,
     getGlobalLeaderboardV2Callable,
     getDailyScoresV2StatsCallable,
-    getWinModalStatsCallable
+    getWinModalStatsCallable,
+    getBestScoreForPuzzle
 } from '../services/firebaseService';
 import { dateKeyForToday } from '../utils/dateUtils';
 import { User } from 'firebase/auth';
@@ -62,10 +63,12 @@ interface DataCacheContextValue {
     userStats: GameStatistics | null;
     globalLeaderboard: LeaderboardEntryV2[] | null;
     winModalStats: WinModalStats | null;
+    bestScoresForDay: Record<'easy' | 'medium' | 'hard', number | null>;
     loadingStates: LoadingStates;
     errorStates: ErrorStates;
     fetchAndCacheData: (currentUser: User | null) => Promise<void>;
     isInitialFetchDone: boolean;
+    updateBestScoreForDay: (difficulty: 'easy' | 'medium' | 'hard', score: number) => void;
 }
 
 const initialLoadingStates: LoadingStates = {
@@ -107,6 +110,9 @@ export const DataCacheProvider: React.FC<DataCacheProviderProps> = ({ children }
     const [userStats, setUserStats] = useState<GameStatistics | null>(null);
     const [globalLeaderboard, setGlobalLeaderboard] = useState<LeaderboardEntryV2[] | null>(null);
     const [winModalStats, setWinModalStats] = useState<WinModalStats | null>(null);
+    const [bestScoresForDay, setBestScoresForDay] = useState<Record<'easy' | 'medium' | 'hard', number | null>>({
+        easy: null, medium: null, hard: null
+    });
     const [loadingStates, setLoadingStates] = useState<LoadingStates>(initialLoadingStates);
     const [errorStates, setErrorStates] = useState<ErrorStates>(initialErrorStates);
     const [isInitialFetchDone, setIsInitialFetchDone] = useState(false);
@@ -157,6 +163,21 @@ export const DataCacheProvider: React.FC<DataCacheProviderProps> = ({ children }
             setErrorStates(prev => ({ ...prev, puzzle: error.message || 'Failed to load puzzle' }));
         } finally {
             setLoadingStates(prev => ({ ...prev, puzzle: false }));
+        }
+
+        // --- 2.5. Fetch Best Scores for today (all difficulties in parallel) ---
+        try {
+            console.log("DataCacheContext: Fetching Best Scores for today...");
+            const [easyBest, mediumBest, hardBest] = await Promise.all([
+                getBestScoreForPuzzle(today, 'easy'),
+                getBestScoreForPuzzle(today, 'medium'),
+                getBestScoreForPuzzle(today, 'hard')
+            ]);
+            setBestScoresForDay({ easy: easyBest, medium: mediumBest, hard: hardBest });
+            console.log("DataCacheContext: Best Scores fetched:", { easy: easyBest, medium: mediumBest, hard: hardBest });
+        } catch (error: any) {
+            console.warn("DataCacheContext: Error fetching best scores (non-critical):", error);
+            // Best scores are non-critical, so we don't set an error state
         }
 
         // --- 3. Fetch Personal Stats (for any authenticated user, including guests) ---
@@ -268,6 +289,18 @@ export const DataCacheProvider: React.FC<DataCacheProviderProps> = ({ children }
 
     }, [isInitialFetchDone, settings.difficultyLevel]); // Include difficulty level in dependencies
 
+    // Update best score for a specific difficulty (used after winning a game)
+    const updateBestScoreForDay = useCallback((difficulty: 'easy' | 'medium' | 'hard', score: number) => {
+        setBestScoresForDay(prev => {
+            const currentBest = prev[difficulty];
+            // Only update if the new score is better (lower) or if there's no current best
+            if (currentBest === null || score < currentBest) {
+                return { ...prev, [difficulty]: score };
+            }
+            return prev;
+        });
+    }, []);
+
     const value: DataCacheContextValue = {
         dailyScoresStats,
         dailyScoresV2Stats,
@@ -276,10 +309,12 @@ export const DataCacheProvider: React.FC<DataCacheProviderProps> = ({ children }
         userStats,
         globalLeaderboard,
         winModalStats,
+        bestScoresForDay,
         loadingStates,
         errorStates,
         fetchAndCacheData,
         isInitialFetchDone,
+        updateBestScoreForDay,
     };
 
     return (

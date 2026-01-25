@@ -47,6 +47,7 @@ interface GameContextValue {
     currentTieBotStreak: number | null;
     currentFirstTryStreak: number | null;
     difficulty: DifficultyLevel | null;
+    dailyBestScore: number | null;
   } | null;
   
   // Functions
@@ -72,6 +73,7 @@ interface GameContextValue {
   handleAutoComplete: () => void;
   setShowAutocompleteModal: (show: boolean) => void;
   navigateToHome: () => void;
+  finalizeBestScore: () => void;
 }
 
 // Create the context with a default undefined value
@@ -96,11 +98,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const DATE_TO_USE = dateKeyForToday();
   const { setShowLandingPage } = useNavigation();
   const { currentUser } = useAuth();
-  const { 
-    puzzleDataV2: cachedPuzzleDataMap, 
-    userStats: cachedUserStats, 
+  const {
+    puzzleDataV2: cachedPuzzleDataMap,
+    userStats: cachedUserStats,
     winModalStats: cachedWinModalStats,
-    loadingStates: cacheLoadingStates 
+    bestScoresForDay,
+    loadingStates: cacheLoadingStates,
+    updateBestScoreForDay
   } = useDataCache(); // Use cache hook
 
   // Game state
@@ -141,6 +145,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     currentTieBotStreak: number | null;
     currentFirstTryStreak: number | null;
     difficulty: DifficultyLevel | null;
+    dailyBestScore: number | null;
   } | null>(null);
   
   // Settings and stats
@@ -393,9 +398,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   useEffect(() => {
     if (cachedWinModalStats) {
       console.log("GameContext: Loading cached win modal stats on mount.");
-      setWinModalStats(cachedWinModalStats);
+      const dailyBestScore = bestScoresForDay[settings.difficultyLevel] ?? null;
+      setWinModalStats({
+        ...cachedWinModalStats,
+        dailyBestScore
+      });
     }
-  }, [cachedWinModalStats]);
+  }, [cachedWinModalStats, bestScoresForDay, settings.difficultyLevel]);
 
   // Fetch fresh stats when the StatsModal is opened
   useEffect(() => {
@@ -720,8 +729,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   const handlePuzzleSolved = async (solvedPuzzle: DailyPuzzle) => {
     console.log(`[STATS-EVENT ${new Date().toISOString()}] Game won - puzzle ID: ${solvedPuzzle.dateString}, userScore: ${solvedPuzzle.userMovesUsed}, algoScore: ${solvedPuzzle.algoScore}, difficulty: ${settings.difficultyLevel}`);
-    
+
     // 1. Update local win modal stats immediately for instant UI display
+    // Show the OLD best score so user can see they beat it (gold number on their tile)
+    // Best score will be updated when user starts their next puzzle
+    const currentBestScore = bestScoresForDay[settings.difficultyLevel] ?? null;
+
     setWinModalStats(prevStats => {
       if (!prevStats) {
         // First win of the day - initialize with basic values
@@ -731,6 +744,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           currentTieBotStreak: solvedPuzzle.userMovesUsed <= solvedPuzzle.algoScore ? 1 : 0,
           currentFirstTryStreak: isFirstTryOfDay && hintsUsedThisGame === 0 && solvedPuzzle.userMovesUsed <= solvedPuzzle.algoScore ? 1 : 0,
           difficulty: settings.difficultyLevel,
+          dailyBestScore: currentBestScore,
         };
       }
       // Subsequent wins - increment attempt count, keep streaks as-is for now
@@ -738,6 +752,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         ...prevStats,
         totalAttempts: attemptsByDifficulty[settings.difficultyLevel],
         difficulty: settings.difficultyLevel,
+        dailyBestScore: currentBestScore,
       };
     });
     
@@ -770,13 +785,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           const data = resp.data as any;
           if (data?.success && data?.stats) {
             console.log('GameContext: Updating win modal stats with fresh data from backend.');
-            setWinModalStats({
+            setWinModalStats(prev => ({
               totalAttempts: data.stats.totalAttempts ?? null,
               currentPuzzleCompletedStreak: data.stats.currentPuzzleCompletedStreak ?? null,
               currentTieBotStreak: data.stats.currentTieBotStreak ?? null,
               currentFirstTryStreak: data.stats.currentFirstTryStreak ?? null,
               difficulty: settings.difficultyLevel,
-            });
+              // Preserve the best score we already computed locally
+              dailyBestScore: prev?.dailyBestScore ?? null,
+            }));
           }
         })
         .catch(e => {
@@ -786,11 +803,25 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     });
   };
 
+  // Update best score if the current puzzle was solved with a better score
+  // Called when user starts a new puzzle (Try Again, change difficulty, etc.)
+  const finalizeBestScore = () => {
+    if (puzzle?.isSolved) {
+      const currentBestScore = bestScoresForDay[settings.difficultyLevel] ?? null;
+      if (currentBestScore === null || puzzle.userMovesUsed < currentBestScore) {
+        updateBestScoreForDay(settings.difficultyLevel, puzzle.userMovesUsed);
+      }
+    }
+  };
+
   const handleTryAgain = async () => {
     if (!puzzle || !firestoreData) {
       setError("Cannot reset game state.");
       return;
     }
+
+    // Update best score before starting new attempt
+    finalizeBestScore();
 
     console.log(`[STATS-EVENT ${new Date().toISOString()}] User clicked Try Again - puzzle ID: ${puzzle.dateString}, moves: ${movesThisAttempt}, hints: ${hintsUsedThisGame}, isSolved: ${puzzle.isSolved}, isLost: ${puzzle.isLost}.`);
 
@@ -1005,6 +1036,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setPuzzle(completedPuzzle);
 
       // 5. Update local win modal stats immediately for instant UI display
+      // Show the OLD best score so user can see they beat it (gold number on their tile)
+      // Best score will be updated when user starts their next puzzle
+      const currentBestScoreAutocomplete = bestScoresForDay[settings.difficultyLevel] ?? null;
+
       setWinModalStats(prevStats => {
         if (!prevStats) {
           // First win of the day - initialize with basic values
@@ -1014,6 +1049,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
             currentTieBotStreak: completedPuzzle.userMovesUsed <= completedPuzzle.algoScore ? 1 : 0,
             currentFirstTryStreak: isFirstTryOfDay && hintsUsedThisGame === 0 && completedPuzzle.userMovesUsed <= completedPuzzle.algoScore ? 1 : 0,
             difficulty: settings.difficultyLevel,
+            dailyBestScore: currentBestScoreAutocomplete,
           };
         }
         // Subsequent wins - increment attempt count, keep streaks as-is for now
@@ -1021,6 +1057,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           ...prevStats,
           totalAttempts: attemptsByDifficulty[settings.difficultyLevel],
           difficulty: settings.difficultyLevel,
+          dailyBestScore: currentBestScoreAutocomplete,
         };
       });
 
@@ -1054,13 +1091,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
             const data = resp.data as any;
             if (data?.success && data?.stats) {
               console.log('GameContext: Updating win modal stats with fresh data from backend (autocomplete).');
-              setWinModalStats({
+              setWinModalStats(prev => ({
                 totalAttempts: data.stats.totalAttempts ?? null,
                 currentPuzzleCompletedStreak: data.stats.currentPuzzleCompletedStreak ?? null,
                 currentTieBotStreak: data.stats.currentTieBotStreak ?? null,
                 currentFirstTryStreak: data.stats.currentFirstTryStreak ?? null,
                 difficulty: settings.difficultyLevel,
-              });
+                // Preserve the best score we already computed locally
+                dailyBestScore: prev?.dailyBestScore ?? null,
+              }));
             }
           })
           .catch(e => {
@@ -1158,7 +1197,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     shareGameStats,
     handleAutoComplete,
     setShowAutocompleteModal: handleSetShowAutocompleteModal,
-    navigateToHome
+    navigateToHome,
+    finalizeBestScore
   };
 
   return (

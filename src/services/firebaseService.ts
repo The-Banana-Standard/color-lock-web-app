@@ -5,8 +5,10 @@ import {
   getIdToken,
   onAuthStateChanged
 } from 'firebase/auth';
-import { 
-  connectFirestoreEmulator 
+import {
+  connectFirestoreEmulator,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import { 
   connectFunctionsEmulator, 
@@ -244,6 +246,23 @@ export const verifyAuthState = () => {
   });
   
   return Promise.resolve(currentUser);
+};
+
+// Direct read for best score (public data)
+export const getBestScoreForPuzzle = async (
+  puzzleId: string,
+  difficulty: 'easy' | 'medium' | 'hard'
+): Promise<number | null> => {
+  if (!firebaseFirestore) return null;
+
+  try {
+    const docRef = doc(firebaseFirestore, 'bestScores', `${puzzleId}-${difficulty}`);
+    const snap = await getDoc(docRef);
+    return snap.exists() ? snap.data()?.userScore ?? null : null;
+  } catch (e) {
+    console.warn('[FirebaseService] Failed to fetch best score:', e);
+    return null;
+  }
 };
 
 // Export the Firebase app instance as default

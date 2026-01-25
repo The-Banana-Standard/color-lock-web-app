@@ -321,6 +321,43 @@
   margin-bottom: 1.5rem;
 }
 
+/* Social Media Icons */
+.social-icons-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  text-decoration: none;
+
+  &:hover {
+    transform: scale(1.1);
+    opacity: 0.85;
+  }
+
+  &.instagram {
+    color: #cc0099;  /* Pink/magenta from title gradient */
+  }
+
+  &.facebook {
+    color: #0066ff;  /* Blue from title gradient */
+  }
+
+  &.reddit {
+    color: #ff6600;  /* Orange from title gradient */
+  }
+}
+
 .landing-logo {
   width: 180px;
   height: auto;
@@ -401,6 +438,69 @@
   margin-bottom: 1rem;
   font-size: 1.3rem;
   color: #333;
+}
+
+.difficulty-switcher {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.difficulty-option {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(.active) {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+
+  // Easy - Green
+  &.easy {
+    &:hover:not(.active) {
+      border-color: rgba(76, 175, 80, 0.5);
+      color: #4CAF50;
+    }
+    &.active {
+      border-color: #4CAF50;
+      color: #4CAF50;
+      background-color: rgba(76, 175, 80, 0.08);
+    }
+  }
+
+  // Medium - Gold
+  &.medium {
+    &:hover:not(.active) {
+      border-color: rgba(255, 193, 7, 0.5);
+      color: #F9A825;
+    }
+    &.active {
+      border-color: #F9A825;
+      color: #F9A825;
+      background-color: rgba(249, 168, 37, 0.08);
+    }
+  }
+
+  // Hard - Red
+  &.hard {
+    &:hover:not(.active) {
+      border-color: rgba(244, 67, 54, 0.5);
+      color: #F44336;
+    }
+    &.active {
+      border-color: #F44336;
+      color: #F44336;
+      background-color: rgba(244, 67, 54, 0.08);
+    }
+  }
 }
 
 .stats-grid {
@@ -491,6 +591,40 @@
 
 .landing-signin-button:hover {
   background-color: #2861d6;
+}
+
+.landing-play-button {
+  background-color: #3478F6;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 250px;
+  margin-bottom: 0.75rem;
+}
+
+.landing-play-button:hover {
+  background-color: #2861d6;
+}
+
+.landing-signin-link {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.landing-signin-link:hover {
+  color: #3478F6;
 }
 
 .landing-guest-button {

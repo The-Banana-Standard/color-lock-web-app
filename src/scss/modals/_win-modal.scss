@@ -1,43 +1,606 @@
+@use 'sass:color';
 @use '../abstracts' as *;
 
-// Win modal styling
+// Win modal styling with muted rainbow gradient
 .win-modal,
 .autocomplete-modal {
   @include modal-container;
   width: 95%;
-  max-width: 550px;
+  max-width: 480px;
   text-align: center;
   @include flex-column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
   position: relative;
-  max-height: 85vh; // allow scrolling for tall content
-  overflow-y: auto; // scroll vertically when needed
+  max-height: 85vh;
+  overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  padding: $spacing-lg;
+
+  // Vibrant rainbow gradient background
+  background: linear-gradient(
+    135deg,
+    rgba(255, 107, 107, 0.35) 0%,
+    rgba(255, 159, 67, 0.35) 17%,
+    rgba(254, 202, 87, 0.35) 33%,
+    rgba(46, 213, 115, 0.35) 50%,
+    rgba(84, 160, 255, 0.35) 67%,
+    rgba(165, 94, 234, 0.35) 83%,
+    rgba(255, 107, 129, 0.35) 100%
+  ),
+  white;
+
+  // Custom scrollbar styling - Webkit (Chrome, Safari, Edge)
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    margin: $spacing-sm 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      rgba(165, 94, 234, 0.5) 0%,
+      rgba(84, 160, 255, 0.5) 50%,
+      rgba(46, 213, 115, 0.5) 100%
+    );
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+
+    &:hover {
+      background: linear-gradient(
+        180deg,
+        rgba(165, 94, 234, 0.7) 0%,
+        rgba(84, 160, 255, 0.7) 50%,
+        rgba(46, 213, 115, 0.7) 100%
+      );
+      background-clip: padding-box;
+    }
+
+    &:active {
+      background: linear-gradient(
+        180deg,
+        rgba(165, 94, 234, 0.85) 0%,
+        rgba(84, 160, 255, 0.85) 50%,
+        rgba(46, 213, 115, 0.85) 100%
+      );
+      background-clip: padding-box;
+    }
+  }
+
+  // Firefox scrollbar styling
+  scrollbar-width: thin;
+  scrollbar-color: rgba(84, 160, 255, 0.5) rgba(0, 0, 0, 0.05);
 }
 
 // Win modal animation
 .win-modal-animated,
 .autocomplete-modal-animated {
-  animation: modalFadeIn $transition-very-slow ease-out, backgroundPulse 8s ease-in-out infinite;
+  animation: modalFadeIn $transition-very-slow ease-out;
 }
 
-// Title styling
-.congratulations-title {
-  font-size: $font-size-xxl;
+// Score Hero Section
+.score-hero {
+  padding: $spacing-lg $spacing-md;
+  border-radius: 16px;
+  position: relative;
+
+  &.beat-bot {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.12), rgba(32, 201, 151, 0.12));
+  }
+
+  &.needs-improvement {
+    background: linear-gradient(135deg, rgba(255, 159, 67, 0.12), rgba(254, 202, 87, 0.12));
+  }
+}
+
+// Scores header
+.scores-header {
+  font-size: $font-size-xl;
   font-weight: $font-weight-bold;
-  margin: 0;
-  background: linear-gradient(45deg, #ff0055, #0066ff);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  animation: titleGlow 4s ease-in-out infinite;
+  color: $color-text-primary;
+  text-align: center;
+  margin: 0 0 $spacing-sm 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-// Message about unlocking color
+// Score Comparison - Two row layout
+.score-comparison {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm 0 $spacing-md;
+}
+
+// User's score row - standalone centered
+.score-row-user {
+  display: flex;
+  justify-content: center;
+}
+
+// Bot and Best comparison row
+.score-row-comparison {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: $spacing-xxl;
+}
+
+// Container for each score tile
+.score-tile-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+// Large score tile with number inside
+.score-tile-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform $transition-normal;
+
+  .tile-number {
+    font-size: 2.5rem;
+    font-weight: $font-weight-bold;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+    // Gold number for new low score
+    &.gold-number {
+      color: #ffd700;
+      text-shadow: 0 2px 8px rgba(255, 215, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  // Color variants
+  &.green {
+    background: linear-gradient(135deg, #28a745, #20c997);
+  }
+
+  &.red {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+  }
+
+  &.blue {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+  }
+
+  &.gold {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    box-shadow: 0 4px 16px rgba(255, 193, 7, 0.4);
+
+    .tile-number {
+      color: #333;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+    }
+  }
+}
+
+// Label above the tile
+.tile-label {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xxs;
+
+  // Text label variant (non-emoji) - smaller for Bot/Best
+  &.text-label {
+    font-size: $font-size-base;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  // Large text label for "Your Score"
+  &.text-label-large {
+    font-size: $font-size-xl;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+}
+
+
+.motivational-text {
+  font-size: $font-size-larger;
+  font-weight: $font-weight-bold;
+  margin: $spacing-md 0 0 0;
+  color: $color-text-primary;
+  text-align: center;
+  line-height: 1.3;
+}
+
+// Streaks Section - 2 cards side by side
+.streaks-container {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-lg;
+  margin: $spacing-sm 0;
+}
+
+.streak-card {
+  flex: 0 0 130px;
+  padding: $spacing-md;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xxs;
+
+  .streak-emoji {
+    font-size: 1.5rem;
+  }
+
+  .streak-value {
+    font-size: 1.75rem;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    line-height: 1;
+  }
+
+  .streak-label {
+    font-size: $font-size-small;
+    color: $color-text-secondary;
+  }
+}
+
+// Action Buttons - Primary layout
+.win-actions-primary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+  margin: $spacing-sm 0;
+}
+
+// Prominent Try Again button (when user didn't beat bot)
+.try-again-prominent {
+  width: 100%;
+  max-width: 280px;
+  padding: $spacing-md $spacing-xl;
+  font-size: $font-size-large;
+  font-weight: $font-weight-bold;
+  background: linear-gradient(135deg, $color-primary, color.adjust($color-primary, $lightness: -10%));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all $transition-normal;
+  box-shadow: 0 4px 12px rgba($color-primary, 0.3);
+  animation: pulseSubtle 2s infinite;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba($color-primary, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Share Win button (when user beat bot)
+.share-win-button {
+  width: 100%;
+  max-width: 280px;
+  padding: $spacing-md $spacing-xl;
+  font-size: $font-size-large;
+  font-weight: $font-weight-bold;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all $transition-normal;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  position: relative;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, #218838, #1aa179);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  svg {
+    font-size: $font-size-base;
+  }
+}
+
+// Secondary action button
+.secondary-action {
+  padding: $spacing-sm $spacing-lg;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  background: transparent;
+  color: $color-primary;
+  border: 2px solid $color-primary;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all $transition-normal;
+
+  &:hover {
+    background: rgba($color-primary, 0.1);
+  }
+}
+
+// Next difficulty button (prominent, for low score achievers)
+.next-difficulty-button {
+  width: 100%;
+  max-width: 280px;
+  padding: $spacing-md $spacing-xl;
+  font-size: $font-size-large;
+  font-weight: $font-weight-bold;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all $transition-normal;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, #218838, #1aa179);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Dual action buttons container (side by side)
+.dual-action-buttons {
+  display: flex;
+  gap: $spacing-sm;
+  width: 100%;
+  max-width: 320px;
+  justify-content: center;
+}
+
+// Primary action button (for dual layout)
+.action-button-primary {
+  flex: 1;
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-size-base;
+  font-weight: $font-weight-bold;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all $transition-normal;
+  box-shadow: 0 3px 10px rgba(40, 167, 69, 0.25);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 14px rgba(40, 167, 69, 0.35);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Secondary action button (for dual layout)
+.action-button-secondary {
+  flex: 1;
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-size-base;
+  font-weight: $font-weight-bold;
+  background: white;
+  color: $color-primary;
+  border: 2px solid $color-primary;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all $transition-normal;
+
+  &:hover {
+    background: rgba($color-primary, 0.08);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Secondary links (Close • Share)
+.secondary-links {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-xs;
+}
+
+.link-separator {
+  color: $color-text-light;
+}
+
+.close-link,
+.share-link {
+  background: none;
+  border: none;
+  color: $color-text-secondary;
+  font-size: $font-size-base;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: $spacing-xs;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xxs;
+
+  svg {
+    font-size: 0.85em;
+  }
+
+  &:hover {
+    color: $color-text-primary;
+  }
+}
+
+// Copy toast notification
+.copy-toast {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: $font-size-small;
+  font-weight: normal;
+  white-space: nowrap;
+  animation: fadeInOut 2s ease-in-out;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #333;
+  }
+}
+
+// Conditional footer
+.conditional-footer {
+  margin-top: $spacing-sm;
+  padding-top: $spacing-md;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+// Next puzzle timer section
+.next-puzzle-timer {
+  text-align: center;
+
+  p {
+    font-size: $font-size-small;
+    margin-bottom: $spacing-xs;
+    color: $color-text-secondary;
+  }
+}
+
+// Timer display
+.timer {
+  font-size: $font-size-xl;
+  color: $color-primary;
+  font-weight: $font-weight-bold;
+}
+
+.time-unit {
+  display: inline-block;
+  min-width: 32px;
+}
+
+.time-separator {
+  margin: 0 2px;
+  opacity: 0.7;
+}
+
+// App promotion section
+.app-promo {
+  margin-top: $spacing-md;
+
+  .promo-text {
+    margin: 0 0 $spacing-sm;
+    font-size: $font-size-small;
+    color: $color-text-secondary;
+  }
+
+  .app-store-badges {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+
+    a {
+      display: inline-block;
+      transition: transform $transition-normal;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+
+    img {
+      height: 36px;
+      width: auto;
+    }
+  }
+}
+
+// Animations
+@keyframes pulseSubtle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes medalPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  15%, 85% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+// Autocomplete content (kept for other modal)
+.autocomplete-content {
+  font-size: $font-size-large;
+  margin: 0;
+  padding: 5px 0;
+}
+
+// Legacy classes kept for backwards compatibility
 .unlocked-message {
   font-size: $font-size-larger;
-  margin: 12px 0 0 0; // add more space above the unlocked line
+  margin: 12px 0 0 0;
   padding: 5px 0;
   display: flex;
   align-items: center;
@@ -56,11 +619,10 @@
   animation: medalPulse 2s infinite;
 }
 
-// Win stats display
 .win-stats {
   display: flex;
   justify-content: center;
-  gap: 18px; // slightly tighter spacing between boxes
+  gap: 18px;
   margin: 5px 0;
   width: 100%;
 }
@@ -68,7 +630,6 @@
 .stat-item {
   @include flex-column;
   align-items: center;
-  // make each box equal and even narrower
   flex: 0 0 110px;
   max-width: 110px;
   min-width: 100px;
@@ -84,65 +645,3 @@
   font-size: $font-size-small;
   color: $color-text-secondary;
 }
-
-// Next puzzle timer section
-.next-puzzle-timer {
-  // Make spacing above/below the timer closer to equal, slightly larger below
-  margin: 6px 0 8px;
-  
-  p {
-    font-size: $font-size-base;
-    margin-bottom: 5px;
-    color: $color-text-light;
-  }
-}
-
-// Tighter spacing before the share section specifically in Win Modal
-.win-modal {
-  .share-section {
-    margin-top: 2px !important; // further reduce space before the line
-    padding-top: 6px !important; // small breathing room after the line
-    border-top: 1px solid #eee; // ensure line remains
-  }
-
-  // Actions row (Play Again / Close)
-  .win-actions {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    // Make spacing symmetrical above and below
-    margin-top: 6px;
-    padding-bottom: 6px;
-    margin-bottom: 0; // minimize extra space
-    
-    button {
-      margin-bottom: 0; // ensure buttons don't add extra space
-    }
-  }
-}
-
-// Timer display
-.timer {
-  font-size: $font-size-xl;
-  color: $color-primary;
-  font-weight: $font-weight-bold;
-  margin: 5px 0;
-}
-
-.time-unit {
-  animation: timeUnitPulse 1s infinite;
-  display: inline-block;
-  width: 32px;
-}
-
-.time-separator {
-  margin: 0 2px;
-  opacity: 0.8;
-}
-
-// Autocomplete content
-.autocomplete-content {
-  font-size: $font-size-large;
-  margin: 0;
-  padding: 5px 0;
-} 

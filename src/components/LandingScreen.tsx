@@ -8,6 +8,10 @@ import { dateKeyForToday } from '../utils/dateUtils';
 import { useDataCache } from '../contexts/DataCacheContext'; // Import the new context hook
 import StatsModal from './StatsModal';
 import { GameStatistics } from '../types/stats';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInstagram, faFacebook, faRedditAlien } from '@fortawesome/free-brands-svg-icons';
+import { DifficultyLevel, defaultSettings } from '../types/settings';
+import { loadSettings, saveSettings } from '../utils/storageUtils';
 
 interface DailyScoreStats {
   lowestScore: number | null;
@@ -54,33 +58,22 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
     ? `${totalPlayersToday} ${totalPlayersToday === 1 ? 'Person Has' : 'People Have'} Completed Today's Puzzle!`
     : 'Be the first to play today!';
 
-  // --- Setup cycling for difficulty stats ---
-  const difficultyOrder: Array<{ key: 'easy' | 'medium' | 'hard'; label: string }> = [
-    { key: 'easy', label: 'Easy' },
-    { key: 'medium', label: 'Medium' },
-    { key: 'hard', label: 'Hard' },
-  ];
+  // --- Difficulty selection state (initialized from localStorage) ---
+  const [currentDifficulty, setCurrentDifficulty] = useState<DifficultyLevel>(() => {
+    const settings = loadSettings(defaultSettings);
+    return settings.difficultyLevel;
+  });
 
-  // rotation state and fade animation
-  const [rotatingIdx, setRotatingIdx] = useState(0);
-  const [fadeIn, setFadeIn] = useState(true);
+  // Handle difficulty change
+  const handleDifficultyChange = (newDifficulty: DifficultyLevel) => {
+    const currentSettings = loadSettings(defaultSettings);
+    const updatedSettings = { ...currentSettings, difficultyLevel: newDifficulty };
+    saveSettings(updatedSettings);
+    setCurrentDifficulty(newDifficulty);
+  };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // fade out, then switch text, then fade in
-      setFadeIn(false);
-      const timeout = setTimeout(() => {
-        setRotatingIdx(prev => (prev + 1) % difficultyOrder.length);
-        setFadeIn(true);
-      }, 1000);
-      return () => clearTimeout(timeout);
-    }, 7000);
-    return () => clearInterval(interval);
-  }, [difficultyOrder.length]);
-
-  // Current per-difficulty stats for rotating difficulty
-  const currentDifficultyKey = difficultyOrder[rotatingIdx]?.key;
-  const currentV2Stats = (dailyScoresV2Stats as any)?.[currentDifficultyKey] as
+  // Current per-difficulty stats for selected difficulty
+  const currentV2Stats = (dailyScoresV2Stats as any)?.[currentDifficulty] as
     | { lowestScore: number | null; averageScore: number | null }
     | undefined;
   const currentBestScore = currentV2Stats?.lowestScore ?? null;
@@ -300,11 +293,27 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
 
 
       <div className="global-stats-container">
-        <h2>
-          <span style={{ opacity: fadeIn ? 1 : 0, transition: 'opacity 1000ms ease' }}>
-            {`Today's Global Stats (${difficultyOrder[rotatingIdx].label})`}
-          </span>
-        </h2>
+        <h2>Today's Global Stats</h2>
+        <div className="difficulty-switcher">
+          <button
+            className={`difficulty-option easy ${currentDifficulty === DifficultyLevel.Easy ? 'active' : ''}`}
+            onClick={() => handleDifficultyChange(DifficultyLevel.Easy)}
+          >
+            Easy
+          </button>
+          <button
+            className={`difficulty-option medium ${currentDifficulty === DifficultyLevel.Medium ? 'active' : ''}`}
+            onClick={() => handleDifficultyChange(DifficultyLevel.Medium)}
+          >
+            Medium
+          </button>
+          <button
+            className={`difficulty-option hard ${currentDifficulty === DifficultyLevel.Hard ? 'active' : ''}`}
+            onClick={() => handleDifficultyChange(DifficultyLevel.Hard)}
+          >
+            Hard
+          </button>
+        </div>
         {statsLoading ? (
           <div className="spinner" style={{margin: '2rem auto'}}></div>
         ) : (
@@ -312,19 +321,15 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
             <div className="stats-grid">
               <div className="stat-card">
                 <div className="stat-value">
-                  <span style={{ opacity: fadeIn ? 1 : 0, transition: 'opacity 1000ms ease' }}>
-                    {currentAverageScore !== null && currentAverageScore !== undefined
-                      ? Number(currentAverageScore).toFixed(1)
-                      : '—'}
-                  </span>
+                  {currentAverageScore !== null && currentAverageScore !== undefined
+                    ? Number(currentAverageScore).toFixed(1)
+                    : '—'}
                 </div>
                 <div className="stat-label">Average Score</div>
               </div>
               <div className="stat-card">
                 <div className="stat-value">
-                  <span style={{ opacity: fadeIn ? 1 : 0, transition: 'opacity 1000ms ease' }}>
-                    {currentBestScore !== null && currentBestScore !== undefined ? currentBestScore : '—'}
-                  </span>
+                  {currentBestScore !== null && currentBestScore !== undefined ? currentBestScore : '—'}
                 </div>
                 <div className="stat-label">Best Score</div>
               </div>
@@ -364,21 +369,34 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
         ) : (
           <>
             <button
-              className="landing-signin-button"
+              className="landing-play-button"
+              onClick={handleGuestMode}
+              disabled={authLoading}
+            >
+              Play Now!
+            </button>
+            <button
+              className="landing-signin-link"
               onClick={() => { setAuthError(null); setShowAuthModal(true); }}
               disabled={authLoading}
             >
               Sign In / Sign Up
             </button>
-            <button
-              className="landing-guest-button"
-              onClick={handleGuestMode}
-              disabled={authLoading}
-            >
-              Play as Guest
-            </button>
           </>
         )}
+      </div>
+
+      {/* Social Media Icons */}
+      <div className="social-icons-container">
+        <a href="https://www.instagram.com/thebananastandard/" target="_blank" rel="noopener noreferrer" className="social-icon instagram">
+          <FontAwesomeIcon icon={faInstagram} />
+        </a>
+        <a href="https://www.facebook.com/profile.php?id=61585308494179" target="_blank" rel="noopener noreferrer" className="social-icon facebook">
+          <FontAwesomeIcon icon={faFacebook} />
+        </a>
+        <a href="https://www.reddit.com/r/ColorLock/" target="_blank" rel="noopener noreferrer" className="social-icon reddit">
+          <FontAwesomeIcon icon={faRedditAlien} />
+        </a>
       </div>
 
       {showAuthModal && (

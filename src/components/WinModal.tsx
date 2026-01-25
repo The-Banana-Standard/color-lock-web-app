@@ -1,11 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactConfetti from 'react-confetti';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark, faCopy, faEnvelope, faShare } from '@fortawesome/free-solid-svg-icons';
-import { faTwitter, faFacebookF } from '@fortawesome/free-brands-svg-icons';
+import { faShare } from '@fortawesome/free-solid-svg-icons';
 import { DailyPuzzle, TileColor } from '../types';
-import { tileColorToName } from '../utils/shareUtils';
-import { SettingsContext } from '../App';
 import { useGameContext } from '../contexts/GameContext';
 import { useTutorialContext } from '../contexts/TutorialContext';
 import { dateKeyForToday } from '../utils/dateUtils';
@@ -18,21 +15,34 @@ interface WinModalProps {
   getColorCSS: (color: TileColor) => string;
   generateShareText: () => string;
   setShowWinModal: (show: boolean) => void;
-  shareToTwitter: () => void;
-  shareToFacebook: () => void;
-  copyToClipboard: (text: string) => void;
+  onChangeDifficulty?: (difficulty: 'easy' | 'medium' | 'hard') => void;
 }
 
-const WinModal: React.FC<WinModalProps> = ({ 
-  puzzle, 
-  onTryAgain, 
-  onClose, 
-  getColorCSS, 
+// App promotion section component
+const AppPromoSection = () => (
+  <div className="app-promo">
+    <p className="promo-text">Play on the go!</p>
+    <div className="app-store-badges">
+      <a href="https://apps.apple.com/us/app/color-lock-daily-puzzle/id6740288143"
+         target="_blank" rel="noopener noreferrer">
+        <img src="/images/app-store-badge.svg" alt="Download on App Store" />
+      </a>
+      <a href="https://play.google.com/store/apps/details?id=com.thebananastandard.colorlock"
+         target="_blank" rel="noopener noreferrer">
+        <img src="/images/google-play-badge.svg" alt="Get it on Google Play" />
+      </a>
+    </div>
+  </div>
+);
+
+const WinModal: React.FC<WinModalProps> = ({
+  puzzle,
+  onTryAgain,
+  onClose,
+  getColorCSS,
   generateShareText,
   setShowWinModal,
-  shareToTwitter: parentShareToTwitter,
-  shareToFacebook: parentShareToFacebook,
-  copyToClipboard: parentCopyToClipboard
+  onChangeDifficulty
 }) => {
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [windowDimensions, setWindowDimensions] = useState<{width: number, height: number}>({
@@ -41,35 +51,29 @@ const WinModal: React.FC<WinModalProps> = ({
   });
   const [confettiActive, setConfettiActive] = useState<boolean>(true);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
-  const [isWebShareSupported, setIsWebShareSupported] = useState<boolean>(false);
-  
-  // Get tutorial context
-  const { isTutorialMode, nextStep, endTutorial } = useTutorialContext();
-  
-  // Get game context to access stats for win modal
-  const { gameStats, winModalStats } = useGameContext();
+  const [displayedScore, setDisplayedScore] = useState<number>(0);
 
-  // Get settings for sound playback
-  const settings = useContext(SettingsContext);
+  // Get tutorial context
+  const { isTutorialMode, endTutorial } = useTutorialContext();
+
+  // Get game context to access stats and settings for win modal
+  const { gameStats, winModalStats, settings, finalizeBestScore } = useGameContext();
+
+  // Get sound setting
   const soundEnabled = settings?.enableSoundEffects || false;
 
   // Use defaultStats if gameStats is somehow null/undefined
   const currentStats = gameStats || defaultStats;
-  
-  // Get today's date key
-  const todayKey = dateKeyForToday();
-  
-  // Values for Win Modal
-  const totalAttemptsForPuzzle = winModalStats?.totalAttempts ?? null;
-  const displayDifficulty = (winModalStats?.difficulty || settings?.difficultyLevel || 'medium') as string;
-  const difficultyText = typeof displayDifficulty === 'string'
-    ? (displayDifficulty.charAt(0).toUpperCase() + displayDifficulty.slice(1))
-    : String(displayDifficulty);
 
-  // Check if Web Share API is supported
-  useEffect(() => {
-    setIsWebShareSupported(typeof navigator.share === 'function');
-  }, []);
+  // Score comparison values
+  const userScore = puzzle.userMovesUsed;
+  const botScore = puzzle.algoScore;
+  const dailyBest = winModalStats?.dailyBestScore;
+  const effectiveBest = dailyBest ?? botScore;
+  const beatBot = userScore <= botScore;
+
+  // Get today's date key for hints tracking
+  const todayKey = dateKeyForToday();
 
   // Play celebration sound once
   useEffect(() => {
@@ -119,12 +123,33 @@ const WinModal: React.FC<WinModalProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Get color name for display
-  const colorName = tileColorToName(puzzle.targetColor);
+  // Animate score count-up effect
+  useEffect(() => {
+    if (userScore <= 0) {
+      setDisplayedScore(userScore);
+      return;
+    }
 
-  // Calculate if the user beat the optimal solution
-  const beatOptimal = puzzle.userMovesUsed <= puzzle.algoScore;
-  
+    // Start from 0 and count up to userScore
+    setDisplayedScore(0);
+
+    // Calculate delay per increment (total animation ~1.2 seconds)
+    const totalDuration = 1200;
+    const delay = Math.max(50, totalDuration / userScore);
+
+    let current = 0;
+    const timer = setInterval(() => {
+      current += 1;
+      setDisplayedScore(current);
+
+      if (current >= userScore) {
+        clearInterval(timer);
+      }
+    }, delay);
+
+    return () => clearInterval(timer);
+  }, [userScore]);
+
   // Format the date for the share text
   const formatDate = () => {
     const now = new Date();
@@ -167,7 +192,7 @@ Target: ${getTileEmoji(puzzle.targetColor)}
 Difficulty: ${difficultyText}
 ${hintsText}
 
-Score: ${puzzle.userMovesUsed} moves${beatOptimal ? ' 🏅' : ''}
+Score: ${puzzle.userMovesUsed} moves${beatBot ? ' 🏅' : ''}
 
 Today's Board:
 ${boardRows}`;
@@ -176,62 +201,119 @@ ${boardRows}`;
   // Get the properly formatted share text
   const formattedShareText = getFormattedShareText();
   const shareTitle = `Color Lock - Daily Puzzle`;
-  const shareUrl = window.location.href;
 
-  // Handler for Web Share API
-  const handleWebShare = async () => {
+  // Unified share handler - uses Web Share API with clipboard fallback
+  const handleShare = async () => {
     if (typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title: shareTitle,
           text: formattedShareText,
         });
-        console.log('Shared successfully');
+        return;
       } catch (err) {
-        console.error('Error sharing:', err);
+        // User cancelled or error - fall through to clipboard
       }
-    } else {
-      // Fallback for browsers that don't support Web Share API
-      handleCopyToClipboard();
     }
-  };
-
-  // Handlers for sharing
-  const handleTwitterShare = () => {
-    parentShareToTwitter();
-  };
-
-  const handleFacebookShare = () => {
-    parentShareToFacebook();
-  };
-
-  const handleEmailShare = () => {
-    const subject = encodeURIComponent(shareTitle);
-    const body = encodeURIComponent(formattedShareText);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  };
-
-  const handleCopyToClipboard = () => {
-    // Use a temporary textarea element for better cross-browser compatibility
-    const textArea = document.createElement('textarea');
-    textArea.value = formattedShareText;
-    textArea.style.position = 'fixed';  // Make the textarea out of the viewport
-    textArea.style.opacity = '0';
-    document.body.appendChild(textArea);
-    textArea.select();
-    
+    // Fallback: copy to clipboard
     try {
-      const successful = document.execCommand('copy');
-      if (successful) {
+      await navigator.clipboard.writeText(formattedShareText);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = formattedShareText;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
         setCopySuccess(true);
         setTimeout(() => setCopySuccess(false), 2000);
+      } catch (e) {
+        console.error('Could not copy text:', e);
       }
-    } catch (err) {
-      console.error('Could not copy text: ', err);
+      document.body.removeChild(textArea);
     }
-    
-    document.body.removeChild(textArea);
   };
+
+  // Determine user tile color based on performance
+  const getUserTileColor = () => {
+    if (!beatBot) {
+      return 'red'; // Lost to bot
+    }
+    // Beat or matched bot - check against effective best
+    if (userScore <= effectiveBest) {
+      return 'blue'; // Low score (new or tied)
+    } else {
+      return 'green'; // Beat bot but not low score
+    }
+  };
+
+  // Check if user set a NEW low score (number should be gold)
+  const isNewLowScore = beatBot && userScore < effectiveBest;
+
+  // Check if user achieved the low score (tied or new)
+  const isLowScore = beatBot && userScore <= effectiveBest;
+
+  // Get difficulty from user settings
+  const puzzleDifficulty = settings?.difficultyLevel || 'medium';
+
+  // App promo shows when user achieves low score on medium or hard difficulty
+  const showAppPromo = isLowScore && (puzzleDifficulty === 'medium' || puzzleDifficulty === 'hard');
+
+  const getNextDifficulty = (): { level: 'easy' | 'medium' | 'hard'; label: string } | null => {
+    if (puzzleDifficulty === 'easy') return { level: 'medium', label: 'Medium' };
+    if (puzzleDifficulty === 'medium') return { level: 'hard', label: 'Hard' };
+    return null; // No next level for hard
+  };
+  const nextDifficulty = getNextDifficulty();
+
+  // Handle trying next difficulty
+  const handleTryNextDifficulty = () => {
+    if (nextDifficulty && onChangeDifficulty) {
+      // Update best score before changing difficulty
+      finalizeBestScore();
+      onChangeDifficulty(nextDifficulty.level);
+      onClose();
+    }
+  };
+
+  // Get motivational message based on score
+  const getMotivationalMessage = () => {
+    const diff = userScore - botScore;
+
+    // Didn't beat bot
+    if (userScore > botScore) {
+      return `So close! Only ${diff} fewer moves to tie the bot.`;
+    }
+
+    // Beat or matched bot - check against effective best
+    if (userScore < effectiveBest) {
+      return "Amazing, you set a new best score for the day!";
+    } else if (userScore === effectiveBest) {
+      return "Impressive, you tied today's best score!";
+    } else {
+      // Beat bot but not the best yet
+      if (userScore < botScore) {
+        return `You beat the bot! Can you match the best score of ${effectiveBest}?`;
+      } else {
+        return `You tied the bot! Can you match the best score of ${effectiveBest}?`;
+      }
+    }
+  };
+
+  const userTileColor = getUserTileColor();
+
+  // Determine best score tile color
+  // Blue by default, green if user tied or beat it (because user tile will be blue)
+  const getBestTileColor = () => {
+    if (isLowScore) return 'green'; // User achieved low score, so best tile turns green
+    return 'blue'; // Default blue
+  };
+  const bestTileColor = getBestTileColor();
 
   // Handle try again button
   const handleTryAgainOrContinue = () => {
@@ -246,7 +328,7 @@ ${boardRows}`;
   };
 
   return (
-    <div className="modal-backdrop">
+    <div className="modal-backdrop" onClick={onClose}>
       {confettiActive && (
         <ReactConfetti
           width={windowDimensions.width}
@@ -258,114 +340,99 @@ ${boardRows}`;
           colors={['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']}
         />
       )}
-      
-      <div className="win-modal win-modal-animated">
-        
-        <div className="unlocked-message">
-          Unlocked <span className="color-name" style={{color: getColorCSS(puzzle.targetColor)}}>{colorName}</span> in <strong>{puzzle.userMovesUsed}</strong> moves!
-          {beatOptimal && <span className="optimal-badge">🏅</span>}
-        </div>
-        
-        <div className="win-stats">
-          <div className="stat-item">
-            <div className="stat-value">{puzzle.algoScore}</div>
-            <div className="stat-label">Goal</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-value">{difficultyText}</div>
-            <div className="stat-label">Difficulty</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-value">{totalAttemptsForPuzzle !== null ? totalAttemptsForPuzzle : '—'}</div>
-            <div className="stat-label">Times Played</div>
+
+      <div className="win-modal win-modal-animated" onClick={(e) => e.stopPropagation()}>
+        {/* Score Hero Section */}
+        <div className={`score-hero ${beatBot ? 'beat-bot' : 'needs-improvement'}`}>
+          <div className="score-comparison">
+            {/* User's score - standalone row */}
+            <div className="score-row-user">
+              <div className="score-tile-container">
+                <span className="tile-label text-label-large">Your Score</span>
+                <div className={`score-tile-large ${userTileColor}`}>
+                  <span className={`tile-number ${isNewLowScore ? 'gold-number' : ''}`}>{displayedScore}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bot and Best scores - comparison row */}
+            <div className="score-row-comparison">
+              {/* Bot's goal tile */}
+              <div className="score-tile-container">
+                <span className="tile-label text-label">Bot</span>
+                <div className={`score-tile-large ${beatBot ? 'red' : 'green'}`}>
+                  <span className="tile-number">{botScore}</span>
+                </div>
+              </div>
+
+              {/* Best score tile - always show, uses bot score when no daily best */}
+              <div className="score-tile-container">
+                <span className="tile-label text-label">{isNewLowScore ? 'Old Best' : 'Best'}</span>
+                <div className={`score-tile-large ${bestTileColor}`}>
+                  <span className="tile-number">{effectiveBest}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Streaks Section */}
-        <div style={{ marginTop: '0.5rem', textAlign: 'center', fontWeight: 600 }}>{`Your Streaks (${difficultyText})`}</div>
-        <div className="win-stats">
-          <div className="stat-item">
-            <div className="stat-value">{winModalStats?.currentPuzzleCompletedStreak ?? '—'}</div>
-            <div className="stat-label">Puzzles</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-value">{winModalStats?.currentTieBotStreak ?? '—'}</div>
-            <div className="stat-label">Goal</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-value">{winModalStats?.currentFirstTryStreak ?? '—'}</div>
-            <div className="stat-label">First Try</div>
-          </div>
-        </div>
-        
-        <div className="win-actions">
-          <button 
-            className="try-again-button"
-            onClick={handleTryAgainOrContinue}
-          >
-            {isTutorialMode ? "Play Today's Puzzle" : "Play Again"}
-          </button>
-          
-          <button className="win-close-button" onClick={onClose}>Close</button>
-        </div>
+        <p className="motivational-text">{getMotivationalMessage()}</p>
 
-        {!isTutorialMode && (
-          <div className="next-puzzle-timer">
-            <p>New Puzzle in:</p>
-            <div className="timer">
-              {timeLeft.split(':').map((unit, index) => (
-                <React.Fragment key={index}>
-                  {index > 0 && <span className="time-separator">:</span>}
-                  <span className="time-unit">{unit}</span>
-                </React.Fragment>
-              ))}
+        {/* Action Buttons - Different layout based on beat-bot state */}
+        {beatBot ? (
+          // User beat/matched the bot
+          <div className="win-actions-primary">
+            {/* Always show two buttons side by side when user beats bot */}
+            <div className="dual-action-buttons">
+              <button className="action-button-secondary" onClick={handleTryAgainOrContinue}>
+                {isTutorialMode ? "Play Today's Puzzle" : "Try Again"}
+              </button>
+              {nextDifficulty && (
+                <button className="action-button-primary" onClick={handleTryNextDifficulty}>
+                  Play {nextDifficulty.label}
+                </button>
+              )}
+            </div>
+            {/* Small share button below */}
+            <button className="share-link" onClick={handleShare}>
+              <FontAwesomeIcon icon={faShare} /> Share
+              {copySuccess && <span className="copy-toast">Copied!</span>}
+            </button>
+          </div>
+        ) : (
+          // User didn't beat bot - emphasize try again
+          <div className="win-actions-primary">
+            <button className="try-again-prominent" onClick={handleTryAgainOrContinue}>
+              {isTutorialMode ? "Play Today's Puzzle" : "Try Again"}
+            </button>
+            <div className="secondary-links">
+              <button className="close-link" onClick={onClose}>Close</button>
+              <span className="link-separator">•</span>
+              <button className="share-link" onClick={handleShare}>
+                Share
+                {copySuccess && <span className="copy-toast">Copied!</span>}
+              </button>
             </div>
           </div>
         )}
 
-        <div className="share-section">
-          <p>Share your results:</p>
-          <div className="social-buttons">
-            <button 
-              className="social-button twitter-button" 
-              onClick={handleTwitterShare}
-              aria-label="Share to Twitter"
-            >
-              <FontAwesomeIcon icon={faTwitter} />
-            </button>
-            <button 
-              className="social-button facebook-button" 
-              onClick={handleFacebookShare}
-              aria-label="Share to Facebook"
-            >
-              <FontAwesomeIcon icon={faFacebookF} />
-            </button>
-            <button 
-              className="social-button email-button" 
-              onClick={handleEmailShare}
-              aria-label="Share via Email"
-            >
-              <FontAwesomeIcon icon={faEnvelope} />
-            </button>
-            <button 
-              className="social-button clipboard-button" 
-              onClick={handleCopyToClipboard}
-              aria-label="Copy to clipboard"
-            >
-              <FontAwesomeIcon icon={faCopy} />
-              {copySuccess && <span className="copy-success-tooltip">Copied!</span>}
-            </button>
-            {isWebShareSupported && (
-              <button 
-                className="social-button web-share-button" 
-                onClick={handleWebShare}
-                aria-label="Share using device options"
-              >
-                <FontAwesomeIcon icon={faShare} />
-              </button>
-            )}
+        {/* Conditional Footer - Timer only when beat bot */}
+        {beatBot && !isTutorialMode && (
+          <div className="conditional-footer">
+            <div className="next-puzzle-timer">
+              <p>New puzzle in:</p>
+              <div className="timer">
+                {timeLeft.split(':').map((unit, index) => (
+                  <React.Fragment key={index}>
+                    {index > 0 && <span className="time-separator">:</span>}
+                    <span className="time-unit">{unit}</span>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+            {showAppPromo && <AppPromoSection />}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

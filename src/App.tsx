@@ -29,7 +29,7 @@ import UsageStatsScreen from './components/UsageStatsScreen';
 import DeleteAccountPage from './components/DeleteAccountPage';
 
 // Utils
-import { generateShareText, shareToTwitter, shareToFacebook, copyToClipboard } from './utils/shareUtils';
+import { generateShareText } from './utils/shareUtils';
 import { getLockedColorCSS } from './utils/colorUtils';
 
 // Context
@@ -470,16 +470,14 @@ const GameContainer = () => {
 
       {/* Win Modal */}
       {showWinModal && (
-        <WinModal 
-          puzzle={puzzle} 
-          onTryAgain={handleTryAgain} 
+        <WinModal
+          puzzle={puzzle}
+          onTryAgain={handleTryAgain}
           onClose={() => setShowWinModal(false)}
           getColorCSS={getColorCSSWithSettings}
-          shareToTwitter={() => shareToTwitter(generateShareText(puzzle))}
-          shareToFacebook={() => shareToFacebook(generateShareText(puzzle))}
-          copyToClipboard={(text) => copyToClipboard(text)}
           generateShareText={() => generateShareText(puzzle)}
           setShowWinModal={setShowWinModal}
+          onChangeDifficulty={handleDifficultyChangeFromHeader}
         />
       )}
 

@@ -158,6 +158,53 @@ async function seedData() {
     await puzzlesV2Batch.commit();
     console.log(`Created puzzlesV2 sample documents for ${todayStr}`);
 
+    // 1c) Seed bestScores for today's puzzles (easy/medium/hard)
+    console.log(`Creating bestScores for ${todayStr} (easy/medium/hard)...`);
+    const bestScoresBatch = db.batch();
+
+    // Use a placeholder user ID for the "best score holder" (will be replaced after userIds are generated)
+    const bestScoreUserId = 'best-score-holder-temp';
+
+    const bestScoresData = {
+      easy: {
+        puzzleId: todayStr,
+        difficulty: 'easy',
+        userId: bestScoreUserId,
+        userScore: puzzlesV2Examples.easy.algoScore - 1,  // 1 better than bot (11)
+        targetColor: puzzlesV2Examples.easy.targetColor,
+        states: puzzlesV2Examples.easy.states,
+        actions: puzzlesV2Examples.easy.actions,
+        colorMap: puzzlesV2Examples.easy.colorMap,
+      },
+      medium: {
+        puzzleId: todayStr,
+        difficulty: 'medium',
+        userId: bestScoreUserId,
+        userScore: puzzlesV2Examples.medium.algoScore,  // Tied with bot (12)
+        targetColor: puzzlesV2Examples.medium.targetColor,
+        states: puzzlesV2Examples.medium.states,
+        actions: puzzlesV2Examples.medium.actions,
+        colorMap: puzzlesV2Examples.medium.colorMap,
+      },
+      hard: {
+        puzzleId: todayStr,
+        difficulty: 'hard',
+        userId: bestScoreUserId,
+        userScore: puzzlesV2Examples.hard.algoScore + 2,  // 2 worse than bot (17)
+        targetColor: puzzlesV2Examples.hard.targetColor,
+        states: puzzlesV2Examples.hard.states,
+        actions: puzzlesV2Examples.hard.actions,
+        colorMap: puzzlesV2Examples.hard.colorMap,
+      }
+    };
+
+    for (const [difficulty, data] of Object.entries(bestScoresData)) {
+      const docRef = db.collection('bestScores').doc(`${todayStr}-${difficulty}`);
+      bestScoresBatch.set(docRef, data, { merge: true });
+    }
+    await bestScoresBatch.commit();
+    console.log(`Created bestScores for ${todayStr}: easy=${bestScoresData.easy.userScore}, medium=${bestScoresData.medium.userScore}, hard=${bestScoresData.hard.userScore}`);
+
     // 2) Generate 10 UIDs
     const userIds = [];
     for (let i = 0; i < 10; i++) userIds.push(generateMockFirebaseUID());
