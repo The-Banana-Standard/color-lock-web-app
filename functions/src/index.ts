@@ -218,6 +218,150 @@ export function isDayAfter(prevDateStr: string | null | undefined, currentDateSt
     }
 }
 
+/**
+ * Check if a score qualifies for best score notification based on difficulty thresholds
+ * Easy: must beat bot by 3+ moves (userScore < algoScore - 2)
+ * Medium: must beat bot by 2+ moves (userScore < algoScore - 1)
+ * Hard: must beat bot by 1+ move (userScore < algoScore)
+ */
+function qualifiesForBestScoreNotification(
+    userScore: number,
+    algoScore: number,
+    difficulty: DifficultyLevel
+): boolean {
+    switch (difficulty) {
+        case DifficultyLevel.Easy:
+            return userScore < algoScore - 2;
+        case DifficultyLevel.Medium:
+            return userScore < algoScore - 1;
+        case DifficultyLevel.Hard:
+            return userScore < algoScore;
+        default:
+            return false;
+    }
+}
+
+/**
+ * Send notifications to users who played today's puzzle when someone sets a new best score
+ * Only notifies users who:
+ * 1. Have a score in dailyScoresV2 for this puzzle/difficulty
+ * 2. Have notifyOnBestScores: true in their user document
+ * 3. Have a valid FCM token
+ * 4. Are NOT the user who just set the new score
+ */
+async function sendBestScoreNotifications(
+    puzzleId: string,
+    difficulty: DifficultyLevel,
+    newBestScore: number,
+    scoringUserId: string
+): Promise<void> {
+    logger.info(`sendBestScoreNotifications: Starting for ${puzzleId}-${difficulty}, score: ${newBestScore}`);
+
+    let sentCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
+    // Step 1: Get all user IDs who played this difficulty today
+    const dailyScoresSnap = await db.collection("dailyScoresV2").doc(puzzleId).get();
+    if (!dailyScoresSnap.exists) {
+        logger.info("sendBestScoreNotifications: No daily scores document found, skipping");
+        return;
+    }
+
+    const dailyScoresData = dailyScoresSnap.data();
+    const difficultyScores = dailyScoresData?.[difficulty] as Record<string, number> | undefined;
+
+    if (!difficultyScores || Object.keys(difficultyScores).length === 0) {
+        logger.info(`sendBestScoreNotifications: No players found for ${difficulty}`);
+        return;
+    }
+
+    // Exclude the user who just set the score - they don't need to be notified
+    const playerUserIds = Object.keys(difficultyScores).filter(uid => uid !== scoringUserId);
+    if (playerUserIds.length === 0) {
+        logger.info(`sendBestScoreNotifications: No other players to notify for ${difficulty}`);
+        return;
+    }
+
+    logger.info(`sendBestScoreNotifications: Found ${playerUserIds.length} other players for ${difficulty}`);
+
+    // Step 2: Query users who have FCM tokens AND have opted into best score notifications
+    const usersSnapshot = await db.collection("users")
+        .where("fcmToken", "!=", null)
+        .where("notifyOnBestScores", "==", true)
+        .get();
+
+    // Build a map of userId -> fcmToken for efficient lookup
+    const eligibleUsers = new Map<string, string>();
+    usersSnapshot.forEach(doc => {
+        eligibleUsers.set(doc.id, doc.data().fcmToken);
+    });
+
+    logger.info(`sendBestScoreNotifications: ${eligibleUsers.size} users have FCM tokens and opt-in enabled`);
+
+    // Step 3: Intersect players who played today with users who have notifications enabled
+    const usersToNotify = playerUserIds.filter(uid => eligibleUsers.has(uid));
+    logger.info(`sendBestScoreNotifications: ${usersToNotify.length} players to notify`);
+
+    if (usersToNotify.length === 0) {
+        return;
+    }
+
+    // Step 4: Send notifications
+    const difficultyDisplay = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+    const notificationTitle = "New Low Score!";
+    const notificationBody = `A user just set a new low score on today's ${difficultyDisplay} Color Lock`;
+
+    for (const userId of usersToNotify) {
+        try {
+            const fcmToken = eligibleUsers.get(userId);
+            if (!fcmToken) {
+                skippedCount++;
+                continue;
+            }
+
+            const message = {
+                token: fcmToken,
+                notification: {
+                    title: notificationTitle,
+                    body: notificationBody,
+                },
+                data: {
+                    screen: "daily_puzzle",
+                    puzzleId: puzzleId,
+                    difficulty: difficulty,
+                    type: "best_score",
+                },
+                android: {
+                    priority: "high" as const,
+                },
+                apns: {
+                    headers: {
+                        "apns-priority": "10",
+                    },
+                },
+            };
+
+            await admin.messaging().send(message);
+            sentCount++;
+            logger.info(`sendBestScoreNotifications: Sent to user ${userId}`);
+
+        } catch (userError: any) {
+            errorCount++;
+
+            // Handle invalid/expired tokens
+            if (userError?.code === 'messaging/registration-token-not-registered' ||
+                userError?.code === 'messaging/invalid-registration-token') {
+                logger.warn(`sendBestScoreNotifications: Invalid FCM token for user ${userId}`);
+            } else {
+                logger.error(`sendBestScoreNotifications: Error sending to user ${userId}:`, userError);
+            }
+        }
+    }
+
+    logger.info(`sendBestScoreNotifications: Complete`, { sent: sentCount, skipped: skippedCount, errors: errorCount });
+}
+
 async function getLowestDailyScore(
     puzzleId: string,
     difficulty: DifficultyLevel,
@@ -334,6 +478,16 @@ export const recordPuzzleHistory = onCall(
         });
 
         let v2Writes: Array<{ diffKey: DifficultyLevel; moves: number }> = [];
+        let bestScoresWritten = false;
+
+        // Fetch user display name for bestScores
+        let userName = `User_${userId.substring(0, 6)}`;
+        try {
+            const userRecord = await admin.auth().getUser(userId);
+            userName = userRecord.displayName || userName;
+        } catch (e) {
+            logger.warn(`recordPuzzleHistory: Failed to fetch displayName for user ${userId}`, e);
+        }
 
         await db.runTransaction(async (tx) => {
             // Read all docs first (all reads must happen before any writes in Firestore transactions)
@@ -518,6 +672,7 @@ export const recordPuzzleHistory = onCall(
                                         tx.set(bestScoresRef, {
                                             puzzleId: puzzleId,
                                             userId: userId,
+                                            userName: userName,
                                             userScore: moves,
                                             targetColor: payload.targetColor || null,
                                             states: payload.states,
@@ -532,6 +687,7 @@ export const recordPuzzleHistory = onCall(
                                             statesCount: payload.states?.length || 0,
                                             actionsCount: payload.actions?.length || 0
                                         });
+                                        bestScoresWritten = true;
                                     } else {
                                         logger.info(`[BEST_SCORES] Not writing - current score (${moves}) is not better than existing (${existingBestScoreVal})`, {
                                             userId,
@@ -867,6 +1023,16 @@ export const recordPuzzleHistory = onCall(
             logger.warn("Failed to update dailyScoresV2 (write/stats)", { puzzleId, difficulty, userId }, e);
         }
 
+        // Send best score notifications if applicable
+        // Only notify when: win + bestScores was written + score meets difficulty threshold
+        if (isWin && bestScoresWritten && qualifiesForBestScoreNotification(moves, botMoves, difficulty)) {
+            try {
+                await sendBestScoreNotifications(puzzleId, difficulty, moves, userId);
+            } catch (notifyError) {
+                logger.warn("Failed to send best score notifications", { puzzleId, difficulty }, notifyError);
+            }
+        }
+
         return { success: true, firstTry, firstToBeatBot, elo };
     }
 );
@@ -917,6 +1083,45 @@ export const setHintUsedForPuzzle = onCall(
 
         logger.info("setHintUsedForPuzzle: hint marked as used", { userId, puzzleId, difficulty: normalizedDifficulty });
         return { success: true };
+    }
+);
+
+// --- New: Update Notification Preferences ---
+
+interface UpdateNotificationPreferencesRequest {
+    notifyOnBestScores: boolean;
+}
+
+/**
+ * Cloud function for clients to update their notification preferences.
+ * Updates the user's document in the users collection.
+ */
+export const updateNotificationPreferences = onCall(
+    {
+        memory: "256MiB",
+        timeoutSeconds: 60,
+        ...getAppCheckConfig(),
+    },
+    async (request) => {
+        if (!request.auth) {
+            throw new HttpsError("unauthenticated", "Authentication required.");
+        }
+        const userId = request.auth.uid;
+        const { notifyOnBestScores } = (request.data || {}) as UpdateNotificationPreferencesRequest;
+
+        if (typeof notifyOnBestScores !== "boolean") {
+            throw new HttpsError("invalid-argument", "notifyOnBestScores must be a boolean.");
+        }
+
+        logger.info(`updateNotificationPreferences: userId=${userId}, notifyOnBestScores=${notifyOnBestScores}`);
+
+        const userRef = db.collection("users").doc(userId);
+        await userRef.set(
+            { notifyOnBestScores },
+            { merge: true }
+        );
+
+        return { success: true, notifyOnBestScores };
     }
 );
 
