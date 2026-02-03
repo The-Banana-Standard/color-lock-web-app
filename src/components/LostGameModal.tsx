@@ -7,6 +7,7 @@ import { useTutorialContext } from '../contexts/TutorialContext';
 interface LostGameModalProps {
   isOpen: boolean;
   targetColor: TileColor | null;
+  lockedColor: TileColor | null;
   getColorCSS: (color: TileColor) => string;
   onClose: () => void;
   onTryAgain: () => void;
@@ -15,6 +16,7 @@ interface LostGameModalProps {
 const LostGameModal: React.FC<LostGameModalProps> = ({
   isOpen,
   targetColor,
+  lockedColor,
   getColorCSS,
   onClose,
   onTryAgain
@@ -51,20 +53,27 @@ const LostGameModal: React.FC<LostGameModalProps> = ({
   if (!isOpen) return null;
   
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay lost-game-modal">
       <div className="modal-content" ref={modalRef}>
         <button className="modal-close" onClick={onClose} aria-label="Close">
           <FontAwesomeIcon icon={faTimes} />
         </button>
         <div className="modal-body">
-          <h2 style={{ color: 'black' }}>Oh no!</h2>
-          <p>You locked the wrong color.</p>
-          <p>Target was <span style={{ 
-            color: targetColor ? getColorCSS(targetColor) : '#000000',
-            fontWeight: 'bold'
-          }}>{targetColor}</span></p>
+          <h2 className="lost-game-title">Oh no!</h2>
+          <p className="lost-game-text">
+            You locked <span style={{
+              color: lockedColor ? getColorCSS(lockedColor) : '#000000',
+              fontWeight: 'bold'
+            }}>{lockedColor}</span> — that's half the board!
+          </p>
+          <p className="lost-game-text">
+            No group can grow larger to unlock it, so <span style={{
+              color: targetColor ? getColorCSS(targetColor) : '#000000',
+              fontWeight: 'bold'
+            }}>{targetColor}</span> can't be locked.
+          </p>
           <div className="modal-buttons">
-            <button className="share-button" onClick={handleContinue}>
+            <button className="lost-game-button" onClick={handleContinue}>
               {isTutorialMode ? "Continue" : "Try Again"}
             </button>
           </div>

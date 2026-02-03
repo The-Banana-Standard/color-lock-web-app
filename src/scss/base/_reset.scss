@@ -1,7 +1,15 @@
+@use '../abstracts' as *;
+
+// ===========================================
+// BOX SIZING
+// ===========================================
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
+// ===========================================
+// HTML & BODY BASE
+// ===========================================
 html, body {
   height: 100%;
   margin: 0;
@@ -11,13 +19,28 @@ html, body {
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: $bg-warm-taupe;
+  min-height: 100vh;
 }
 
-button, 
-.button, 
-[class*="-button"], 
-[role="button"], 
-input[type="button"], 
+// ===========================================
+// DARK MODE BACKGROUND
+// ===========================================
+@include dark-mode {
+  body {
+    background-color: $bg-dark-mode;
+    color: $color-light-taupe;
+  }
+}
+
+// ===========================================
+// CURSOR DEFAULTS
+// ===========================================
+button,
+.button,
+[class*="-button"],
+[role="button"],
+input[type="button"],
 input[type="submit"] {
   cursor: pointer !important;
 }
@@ -28,16 +51,85 @@ button, input, select, textarea {
   margin: 0;
 }
 
+// ===========================================
+// IMAGES
+// ===========================================
 img {
   max-width: 100%;
   height: auto;
 }
 
-/* Ensure clickable elements have pointer cursor */
+// ===========================================
+// CLICKABLE ELEMENTS
+// ===========================================
 div[onClick],
 div[role="button"],
 span[onClick],
 span[role="button"],
 a {
   cursor: pointer;
-} 
+}
+
+// ===========================================
+// APP ROOT CONTAINER
+// ===========================================
+#root,
+.app-container {
+  min-height: 100vh;
+  background-color: $bg-warm-taupe;
+
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+  }
+}
+
+// ===========================================
+// SELECTION COLORS
+// ===========================================
+::selection {
+  background-color: rgba($gradient-blue-start, 0.3);
+  color: $color-text-primary;
+}
+
+// ===========================================
+// SCROLLBAR STYLING
+// ===========================================
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba($color-primary-gray, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba($color-primary-gray, 0.3);
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba($color-primary-gray, 0.5);
+  }
+}
+
+// ===========================================
+// FOCUS STYLES
+// ===========================================
+:focus-visible {
+  outline: 2px solid $gradient-blue-start;
+  outline-offset: 2px;
+}
+
+// ===========================================
+// REDUCED MOTION
+// ===========================================
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

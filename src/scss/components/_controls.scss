@@ -1,4 +1,5 @@
 @use '../abstracts' as *;
+@use 'sass:color';
 
 // Status messages
 .status-message {
@@ -9,15 +10,25 @@
   max-width: 500px;
   width: 100%;
   text-align: center;
-  
+
   &.solved {
     background-color: $color-success-light;
     color: $color-success;
   }
-  
+
   &.lost {
     background-color: $color-error-light;
     color: $color-error;
+  }
+
+  @include dark-mode {
+    &.solved {
+      background-color: color.adjust($color-success-light, $lightness: -60%);
+    }
+
+    &.lost {
+      background-color: color.adjust($color-error-light, $lightness: -60%);
+    }
   }
 }
 
@@ -33,10 +44,19 @@
   max-width: 500px;
   width: 100%;
   position: relative;
-  
+
   h1 {
-    margin: 0 0 $spacing-xs 0;
-    font-size: 1.8rem;
+    margin: 0 0 0px 0;
+    font-size: 1rem;
+  }
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+
+    h1 {
+      color: $color-light-taupe;
+    }
   }
 }
 
@@ -45,6 +65,10 @@
   align-items: center;
   gap: 6px;
   margin-bottom: $spacing-xs;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .target-circle {
@@ -57,6 +81,10 @@
   display: flex;
   gap: $spacing-md;
   font-weight: $font-weight-medium;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 // Controls container
@@ -85,10 +113,15 @@
   text-align: center;
   font-weight: $font-weight-bold;
   margin-bottom: 0;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .locked-label {
   margin-right: $spacing-xxs;
+  color: $color-primary-gray;
 }
 
 .locked-count {
@@ -120,7 +153,7 @@
   background-color: #ccc;
   transition: .4s;
   border-radius: 26px;
-  
+
   &:before {
     position: absolute;
     content: "";
@@ -131,6 +164,10 @@
     background-color: $color-white;
     transition: .4s;
     border-radius: $border-radius-circle;
+  }
+
+  @include dark-mode {
+    background-color: #444;
   }
 }
 
@@ -155,6 +192,12 @@ input:checked + .toggle-slider:before {
   font-size: $font-size-base;
   width: 180px;
   color: $color-text-primary;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    border-color: $color-light-taupe;
+    color: $color-light-taupe;
+  }
 }
 
 // Share section
@@ -213,6 +256,10 @@ input:checked + .toggle-slider:before {
   flex-direction: column;
   align-items: center;
   color: $color-text-secondary;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .difficulty-text {
@@ -236,7 +283,7 @@ input:checked + .toggle-slider:before {
   background-color: transparent;
   transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   box-sizing: border-box;
-  
+
   /* Button resets */
   padding: 0;
   margin: 0;
@@ -244,16 +291,24 @@ input:checked + .toggle-slider:before {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  
+
   /* Improved focus state without outline */
   &:focus {
     outline: none;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
     transform: scale(1.1);
   }
-  
+
   &:hover {
     opacity: 0.8;
+  }
+
+  @include dark-mode {
+    border-color: $color-light-taupe;
+
+    &:focus {
+      box-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+    }
   }
 }
 
@@ -262,7 +317,7 @@ input:checked + .toggle-slider:before {
 .difficulty-indicator-container.difficulty-easy {
   .difficulty-column.easy {
     border: none;
-    background-color: #2ecc71; /* Green */
+    background: linear-gradient(to bottom, #afc053, #b9c255); /* Green gradient */
   }
 }
 
@@ -272,13 +327,13 @@ input:checked + .toggle-slider:before {
   .difficulty-column.medium {
     border: none;
   }
-  
+
   .difficulty-column.easy {
-    background-color: #2ecc71; /* Green */
+    background: linear-gradient(to bottom, #afc053, #b9c255); /* Green gradient */
   }
-  
+
   .difficulty-column.medium {
-    background-color: #f1c40f; /* Yellow */
+    background: linear-gradient(to bottom, #fb997f, #fea474); /* Orange gradient */
   }
 }
 
@@ -287,16 +342,16 @@ input:checked + .toggle-slider:before {
   .difficulty-column {
     border: none;
   }
-  
+
   .difficulty-column.easy {
-    background-color: #2ecc71; /* Green */
+    background: linear-gradient(to bottom, #afc053, #b9c255); /* Green gradient */
   }
-  
+
   .difficulty-column.medium {
-    background-color: #f1c40f; /* Yellow */
+    background: linear-gradient(to bottom, #fb997f, #fea474); /* Orange gradient */
   }
-  
+
   .difficulty-column.hard {
-    background-color: #e74c3c; /* Red */
+    background: linear-gradient(to bottom, #d16381, #db757f); /* Red gradient */
   }
 } 

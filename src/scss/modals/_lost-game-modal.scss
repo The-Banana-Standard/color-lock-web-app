@@ -1,0 +1,29 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.lost-game-modal .modal-content {
+  background-color: $color-light-taupe;
+}
+
+.lost-game-title {
+  @include gradient-pink;
+  @include gradient-text;
+  font-family: $font-family-display;
+  font-style: italic;
+  font-size: $font-size-modal-title;
+  margin-top: 0;
+  margin-bottom: $spacing-md;
+}
+
+.lost-game-text {
+  color: $color-primary-gray;
+  font-size: $font-size-large;
+  margin: $spacing-xs 0;
+}
+
+.lost-game-button {
+  @include gradient-button($gradient-blue-start, $gradient-blue-end);
+  border-radius: $border-radius-medium;
+  padding: $spacing-sm $spacing-xl;
+  box-shadow: $shadow-medium;
+}

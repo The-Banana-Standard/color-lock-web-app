@@ -1,10 +1,23 @@
-// Modal animations
+@use '../abstracts' as *;
+@use 'sass:color';
+
+// ===========================================
+// MODAL ANIMATIONS
+// ===========================================
 @keyframes modalFadeIn {
-  0% { opacity: 0; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-// Fade animations
+// ===========================================
+// FADE ANIMATIONS
+// ===========================================
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -36,7 +49,131 @@
   }
 }
 
-// Subtle pulse animations
+// ===========================================
+// FLOATING BACKGROUND CIRCLES
+// ===========================================
+@keyframes floatVertical {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes floatHorizontal {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes floatDiagonal {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, -15px);
+  }
+}
+
+// Floating circles container
+.floating-circles-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+// Individual floating circle
+.floating-circle {
+  position: absolute;
+  border-radius: 50%;
+  animation-timing-function: $ease-default;
+  animation-iteration-count: infinite;
+
+  // Size variations
+  &.size-small {
+    width: 30px;
+    height: 30px;
+  }
+
+  &.size-medium {
+    width: 60px;
+    height: 60px;
+  }
+
+  &.size-large {
+    width: 90px;
+    height: 90px;
+  }
+
+  &.size-xlarge {
+    width: 120px;
+    height: 120px;
+  }
+
+  // Color variations using tile colors
+  &.color-red {
+    background-color: rgba($tile-red, 0.4);
+  }
+
+  &.color-green {
+    background-color: rgba($tile-green, 0.4);
+  }
+
+  &.color-blue {
+    background-color: rgba($tile-blue, 0.4);
+  }
+
+  &.color-yellow {
+    background-color: rgba($tile-yellow, 0.4);
+  }
+
+  &.color-purple {
+    background-color: rgba($tile-purple, 0.4);
+  }
+
+  &.color-orange {
+    background-color: rgba($tile-orange, 0.4);
+  }
+
+  // Animation variations
+  &.anim-vertical {
+    animation-name: floatVertical;
+  }
+
+  &.anim-horizontal {
+    animation-name: floatHorizontal;
+  }
+
+  &.anim-diagonal {
+    animation-name: floatDiagonal;
+  }
+
+  // Duration variations
+  &.duration-slow {
+    animation-duration: 6s;
+  }
+
+  &.duration-medium {
+    animation-duration: 4s;
+  }
+
+  &.duration-fast {
+    animation-duration: 3s;
+  }
+}
+
+// ===========================================
+// GLOW ANIMATIONS
+// ===========================================
 @keyframes subtleLockGlow {
   0% { filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.4)); }
   50% { filter: drop-shadow(0 0 0.8px rgba(255, 255, 255, 0.6)); }
@@ -49,7 +186,21 @@
   100% { box-shadow: inset 0 0 10px 2px, 0 0 8px 1px; }
 }
 
-// Improved color-fade animation with smoother transitions
+@keyframes neon-glow-pulse {
+  0% {
+    box-shadow: 0 0 16px 6px rgba($gradient-blue-start, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 20px 8px rgba($gradient-blue-start, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 16px 6px rgba($gradient-blue-start, 0.7);
+  }
+}
+
+// ===========================================
+// COLOR FADE ANIMATIONS
+// ===========================================
 @keyframes color-fade {
   0% {
     background-color: var(--current-color);
@@ -65,31 +216,32 @@
   }
 }
 
-// Synchronized pulsate animation with glow using target color - subtle version
 @keyframes hint-pulsate-glow {
   0% {
     transform: scale(1);
-    filter: drop-shadow(0 0 3px var(--target-color, #1E90FF))
-            drop-shadow(0 0 6px var(--target-color, #1E90FF));
+    filter: drop-shadow(0 0 3px var(--target-color, $gradient-blue-start))
+            drop-shadow(0 0 6px var(--target-color, $gradient-blue-start));
   }
   35% {
     transform: scale(1.03);
-    filter: drop-shadow(0 0 5px var(--target-color, #1E90FF))
-            drop-shadow(0 0 10px var(--target-color, #1E90FF));
+    filter: drop-shadow(0 0 5px var(--target-color, $gradient-blue-start))
+            drop-shadow(0 0 10px var(--target-color, $gradient-blue-start));
   }
   65% {
     transform: scale(1.03);
-    filter: drop-shadow(0 0 5px var(--target-color, #1E90FF))
-            drop-shadow(0 0 10px var(--target-color, #1E90FF));
+    filter: drop-shadow(0 0 5px var(--target-color, $gradient-blue-start))
+            drop-shadow(0 0 10px var(--target-color, $gradient-blue-start));
   }
   100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 3px var(--target-color, #1E90FF))
-            drop-shadow(0 0 6px var(--target-color, #1E90FF));
+    filter: drop-shadow(0 0 3px var(--target-color, $gradient-blue-start))
+            drop-shadow(0 0 6px var(--target-color, $gradient-blue-start));
   }
 }
 
-// Arrow indicator animation
+// ===========================================
+// BOUNCE & MOVEMENT ANIMATIONS
+// ===========================================
 @keyframes arrow-bounce {
   0%, 100% {
     transform: translateY(0);
@@ -102,23 +254,23 @@
 @keyframes outline-fade {
   0% {
     opacity: 0;
-    box-shadow: 0 0 3px 0px rgba(30, 144, 255, 0.3);
+    box-shadow: 0 0 3px 0px rgba($gradient-blue-start, 0.3);
   }
   15% {
     opacity: 1;
-    box-shadow: 0 0 6px 1px rgba(30, 144, 255, 0.5);
+    box-shadow: 0 0 6px 1px rgba($gradient-blue-start, 0.5);
   }
   30% {
     opacity: 1;
-    box-shadow: 0 0 7px 1.5px rgba(30, 144, 255, 0.6);
+    box-shadow: 0 0 7px 1.5px rgba($gradient-blue-start, 0.6);
   }
   45% {
     opacity: 0;
-    box-shadow: 0 0 3px 0px rgba(30, 144, 255, 0.3);
+    box-shadow: 0 0 3px 0px rgba($gradient-blue-start, 0.3);
   }
   100% {
     opacity: 0;
-    box-shadow: 0 0 3px 0px rgba(30, 144, 255, 0.3);
+    box-shadow: 0 0 3px 0px rgba($gradient-blue-start, 0.3);
   }
 }
 
@@ -128,18 +280,24 @@
   100% { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); }
 }
 
+// ===========================================
+// BACKGROUND & TITLE ANIMATIONS
+// ===========================================
 @keyframes backgroundPulse {
-  0% { background-color: #ffffff; }
-  50% { background-color: #f8f9ff; }
-  100% { background-color: #ffffff; }
+  0% { background-color: $bg-warm-taupe; }
+  50% { background-color: color.adjust($bg-warm-taupe, $lightness: 3%); }
+  100% { background-color: $bg-warm-taupe; }
 }
 
 @keyframes titleGlow {
-  0% { text-shadow: 0 0 5px rgba(255, 0, 85, 0.1); }
-  50% { text-shadow: 0 0 15px rgba(0, 102, 255, 0.2); }
-  100% { text-shadow: 0 0 5px rgba(255, 0, 85, 0.1); }
+  0% { text-shadow: 0 0 5px rgba($gradient-coral-start, 0.1); }
+  50% { text-shadow: 0 0 15px rgba($gradient-blue-start, 0.2); }
+  100% { text-shadow: 0 0 5px rgba($gradient-coral-start, 0.1); }
 }
 
+// ===========================================
+// UI ELEMENT ANIMATIONS
+// ===========================================
 @keyframes medalPulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.2); }
@@ -152,14 +310,66 @@
   100% { opacity: 1; }
 }
 
-@keyframes neon-glow-pulse {
+// ===========================================
+// CELEBRATION ANIMATIONS
+// ===========================================
+@keyframes firework-burst {
   0% {
-    box-shadow: 0 0 16px 6px rgba(0, 191, 255, 0.7);
+    transform: scale(0);
+    opacity: 1;
   }
   50% {
-    box-shadow: 0 0 20px 8px rgba(0, 191, 255, 0.9);
+    opacity: 0.8;
   }
   100% {
-    box-shadow: 0 0 16px 6px rgba(0, 191, 255, 0.7);
+    transform: scale(1);
+    opacity: 0;
   }
-} 
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+// ===========================================
+// SLIDE ANIMATIONS
+// ===========================================
+@keyframes slideInFromBottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromTop {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToBottom {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}

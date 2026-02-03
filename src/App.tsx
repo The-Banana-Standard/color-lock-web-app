@@ -259,16 +259,16 @@ const GameContainer = () => {
 
       {/* Desktop Icon Buttons (Top Right) */}
       <div className="side-button-container top-right desktop-only-icons">
-        <button className="icon-button" onClick={handleHomeClick} aria-label="Home">
+        <button className="icon-button icon-button--coral" onClick={handleHomeClick} aria-label="Home">
           <FontAwesomeIcon icon={faHome} />
         </button>
-        <button className="icon-button" onClick={handleSettingsClickAction} aria-label="Settings">
+        <button className="icon-button icon-button--blue" onClick={handleSettingsClickAction} aria-label="Settings">
           <FontAwesomeIcon icon={faGear} />
         </button>
-        <button className="icon-button" onClick={handleStatsClickAction} aria-label="Statistics">
+        <button className="icon-button icon-button--green" onClick={handleStatsClickAction} aria-label="Statistics">
           <FontAwesomeIcon icon={faTrophy} />
         </button>
-        <button className="icon-button" onClick={handleInfoClickAction} aria-label="Tutorial">
+        <button className="icon-button icon-button--pink" onClick={handleInfoClickAction} aria-label="Tutorial">
           <FontAwesomeIcon icon={faInfoCircle} />
         </button>
       </div>
@@ -462,6 +462,16 @@ const GameContainer = () => {
         <LostGameModal
           isOpen={puzzle.isLost}
           targetColor={puzzle.targetColor}
+          lockedColor={(() => {
+            if (puzzle.lockedCells.size === 0) return null;
+            const cellKey = puzzle.lockedCells.values().next().value;
+            if (typeof cellKey !== 'string') return null;
+            const [rowStr, colStr] = cellKey.split(',');
+            const row = parseInt(rowStr, 10);
+            const col = parseInt(colStr, 10);
+            if (isNaN(row) || isNaN(col)) return null;
+            return puzzle.grid[row]?.[col] ?? null;
+          })()}
           getColorCSS={getColorCSSWithSettings}
           onClose={resetLostState}
           onTryAgain={handleTryAgain}

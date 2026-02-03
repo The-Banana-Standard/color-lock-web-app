@@ -1,92 +1,204 @@
-// Colors
-$color-primary: #3478F6; // iOS blue
-$color-primary-dark: #2861d6;
-$color-primary-light: #4a90e2;
+// ============================================
+// Color Lock Design System Variables
+// Retro | Sleek | Minimalistic
+// ============================================
+@use 'sass:color';
 
-$color-secondary: #f0f0f0;
-$color-secondary-dark: #e0e0e0;
-$color-secondary-light: #f5f5f5;
+// ===========================================
+// BACKGROUND COLORS
+// ===========================================
+$bg-warm-taupe: rgb(233, 227, 201);        // #e9e3c9 - Primary light mode background
+$bg-dark-mode: #1a1a1a;                     // Dark mode background
+$bg-dark-elevated: #2d2d2d;                 // Dark mode elevated surfaces (cards, modals)
+$overlay-opacity: 0.7;
 
-$color-gray-light: #f0f0f0;
-$color-gray-lighter: #f7f7f7;
+// ===========================================
+// BRAND GRADIENT COLORS
+// ===========================================
+// Coral gradient (CO in title, User Score)
+$gradient-coral-start: #fb997f;
+$gradient-coral-end: #fea474;
 
+// Gold gradient (LO in "color")
+$gradient-gold-start: #f7ac4b;
+$gradient-gold-end: #f6b252;
+
+// Green gradient (R in title)
+$gradient-green-start: #afc053;
+$gradient-green-end: #b9c255;
+
+// Blue gradient (LO in "lock", Best Score)
+$gradient-blue-start: #4ca9ea;
+$gradient-blue-end: #38bdfe;
+
+// Pink gradient (CK in title, Close/Dismiss)
+$gradient-pink-start: #d16381;
+$gradient-pink-end: #db757f;
+
+// Share green gradient
+$gradient-share-start: #8a9a45;
+$gradient-share-end: #94a04a;
+
+// ===========================================
+// UI COLORS
+// ===========================================
+$color-primary-gray: rgb(128, 128, 128);    // #808080 - Primary button color
+$color-light-taupe: rgb(233, 227, 201);     // #e9e3c9 - Button text, light elements
+$color-description-text: rgb(140, 130, 115); // #8c8273 - Secondary text
+
+// Legacy color mappings (for backwards compatibility)
+$color-primary: $color-primary-gray;
+$color-primary-dark: color.adjust($color-primary-gray, $lightness: -10%);
+$color-primary-light: color.adjust($color-primary-gray, $lightness: 10%);
+
+$color-secondary: $bg-warm-taupe;
+$color-secondary-dark: color.adjust($bg-warm-taupe, $lightness: -5%);
+$color-secondary-light: color.adjust($bg-warm-taupe, $lightness: 3%);
+
+$color-gray-light: $bg-warm-taupe;
+$color-gray-lighter: color.adjust($bg-warm-taupe, $lightness: 3%);
+
+// ===========================================
+// TEXT COLORS
+// ===========================================
 $color-text-primary: #333;
-$color-text-secondary: #666;
-$color-text-light: #777;
+$color-text-secondary: $color-description-text;
+$color-text-light: $color-description-text;
 
+// ===========================================
+// STATUS COLORS
+// ===========================================
 $color-success: #085508;
 $color-success-light: #d1f7d1;
 $color-error: #900;
 $color-error-light: #ffd4d4;
 
+// ===========================================
+// UTILITY COLORS
+// ===========================================
 $color-white: #fff;
 $color-black: #000;
-
 $color-overlay: rgba(0, 0, 0, 0.5);
 $color-overlay-light: rgba(0, 0, 0, 0.15);
+$color-border: color.adjust($bg-warm-taupe, $lightness: -10%);
 
-$color-border: #eee;
+// ===========================================
+// TILE COLORS (Standard)
+// ===========================================
+$tile-red: rgb(219, 92, 92);       // #db5c5c
+$tile-green: rgb(92, 179, 92);     // #5cb35c
+$tile-blue: rgb(92, 135, 219);     // #5c87db
+$tile-yellow: rgb(237, 217, 92);   // #edd95c
+$tile-purple: rgb(163, 92, 184);   // #a35cb8
+$tile-orange: rgb(237, 143, 71);   // #ed8f47
 
-// Typography
+// ===========================================
+// TILE COLORS (Color-Blind Accessible)
+// ===========================================
+$tile-red-cb: rgb(230, 159, 0);      // Orange
+$tile-green-cb: rgb(86, 180, 233);   // Cyan
+$tile-blue-cb: rgb(0, 114, 178);     // Dark Blue
+$tile-yellow-cb: rgb(240, 228, 66); // Pale Yellow
+$tile-purple-cb: rgb(204, 121, 167); // Mauve
+$tile-orange-cb: rgb(213, 94, 0);    // Dark Orange
+
+// ===========================================
+// TYPOGRAPHY
+// ===========================================
+$font-family-display: 'Arvo', Georgia, serif;
 $font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
   Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+// Type Scale
+$font-size-hero: 48px;      // Hero titles
+$font-size-modal-title: 32px; // Modal titles
+$font-size-section: 24px;   // Section titles
+$font-size-xxl: 32px;
+$font-size-xl: 28px;
+$font-size-larger: 24px;
+$font-size-large: 18px;
 $font-size-base: 16px;
 $font-size-small: 14px;
 $font-size-smaller: 12px;
 $font-size-smallest: 8px;
-$font-size-large: 18px;
-$font-size-larger: 24px;
-$font-size-xl: 28px;
-$font-size-xxl: 32px;
 
+// Font Weights
 $font-weight-normal: 400;
 $font-weight-medium: 500;
 $font-weight-bold: 600;
 $font-weight-bolder: 700;
 
-// Spacing
-$spacing-xxs: 4px;
-$spacing-xs: 8px;
-$spacing-sm: 12px;
-$spacing-md: 16px;
-$spacing-lg: 24px;
-$spacing-xl: 30px;
-$spacing-xxl: 40px;
+// ===========================================
+// SPACING (8px base grid)
+// ===========================================
+$spacing-xxs: 4px;   // Tight groupings, inline spacing
+$spacing-xs: 8px;    // Small component padding
+$spacing-sm: 12px;   // Default inner padding
+$spacing-md: 16px;   // Standard element spacing
+$spacing-lg: 24px;   // Section breaks
+$spacing-xl: 32px;   // Major section spacing
+$spacing-xxl: 40px;  // Full screen margins
 $spacing-xxxl: 50px;
 $spacing-xxxxl: 60px;
 
-// Borders
-$border-radius-small: 4px;
-$border-radius-medium: 8px;
-$border-radius-large: 12px;
+// ===========================================
+// BORDERS & RADII
+// ===========================================
+$border-radius-small: 8px;    // Small components (buttons, chips)
+$border-radius-medium: 12px;  // Medium components (cards, controls)
+$border-radius-large: 20px;   // Large modals and sheets
 $border-radius-xl: 20px;
 $border-radius-circle: 50%;
 
-// Shadows
+// ===========================================
+// SHADOWS
+// ===========================================
+// Light mode shadows
 $shadow-small: 0 1px 3px rgba(0, 0, 0, 0.1);
-$shadow-medium: 0 2px 4px rgba(0, 0, 0, 0.1);
-$shadow-large: 0 2px 6px rgba(0, 0, 0, 0.1);
-$shadow-xl: 0 4px 20px rgba(0, 0, 0, 0.2);
+$shadow-medium: 0 2px 6px rgba(0, 0, 0, 0.15);
+$shadow-large: 0 2px 10px rgba(0, 0, 0, 0.2);
+$shadow-xl: 0 4px 20px rgba(0, 0, 0, 0.3);
 
-// Animations
+// Dark mode shadows
+$shadow-dark-small: 0 1px 3px rgba(255, 255, 255, 0.08);
+$shadow-dark-medium: 0 2px 6px rgba(255, 255, 255, 0.12);
+$shadow-dark-large: 0 2px 8px rgba(255, 255, 255, 0.15);
+
+// Modal shadow
+$shadow-modal: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+// ===========================================
+// ANIMATIONS
+// ===========================================
 $transition-fast: 0.1s;
 $transition-normal: 0.2s;
 $transition-slow: 0.3s;
 $transition-very-slow: 0.4s;
 
-// Grid values
-$grid-max-board-size: 380px; // Fixed board size for all difficulties
-$grid-cell-margin: 2px;
-$grid-cell-size: 72px; // Default size (will be overridden by dynamic sizing)
-$grid-cell-container-size: 76px; // Default size (will be overridden by dynamic sizing)
+// Animation timing
+$ease-default: ease-in-out;
+$ease-out: ease-out;
 
-// Z-index
+// ===========================================
+// GRID VALUES
+// ===========================================
+$grid-max-board-size: 380px;
+$grid-cell-margin: 2px;
+$grid-cell-size: 72px;
+$grid-cell-container-size: 76px;
+
+// ===========================================
+// Z-INDEX
+// ===========================================
 $z-index-base: 1;
+$z-index-floating: 100;
 $z-index-modal: 1000;
 $z-index-tooltip: 2000;
 
-// Breakpoints
+// ===========================================
+// BREAKPOINTS
+// ===========================================
 $breakpoint-mobile: 480px;
 $breakpoint-tablet: 768px;
 $breakpoint-desktop: 1024px;
-$breakpoint-large-desktop: 1440px; 
+$breakpoint-large-desktop: 1440px;

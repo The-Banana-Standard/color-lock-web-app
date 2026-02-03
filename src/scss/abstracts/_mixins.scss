@@ -1,7 +1,9 @@
 @use 'variables' as *;
 @use 'sass:color';
 
-// Flexbox mixins
+// ===========================================
+// FLEXBOX MIXINS
+// ===========================================
 @mixin flex-center {
   display: flex;
   align-items: center;
@@ -23,81 +25,179 @@
   justify-content: space-between;
 }
 
-// Button mixins
+// ===========================================
+// GRADIENT MIXINS
+// ===========================================
+@mixin gradient-coral {
+  background: linear-gradient(to right, $gradient-coral-start, $gradient-coral-end);
+}
+
+@mixin gradient-gold {
+  background: linear-gradient(to right, $gradient-gold-start, $gradient-gold-end);
+}
+
+@mixin gradient-green {
+  background: linear-gradient(to right, $gradient-green-start, $gradient-green-end);
+}
+
+@mixin gradient-blue {
+  background: linear-gradient(to right, $gradient-blue-start, $gradient-blue-end);
+}
+
+@mixin gradient-pink {
+  background: linear-gradient(to right, $gradient-pink-start, $gradient-pink-end);
+}
+
+@mixin gradient-share {
+  background: linear-gradient(to right, $gradient-share-start, $gradient-share-end);
+}
+
+@mixin gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+// ===========================================
+// BUTTON MIXINS
+// ===========================================
 @mixin button-base {
   cursor: pointer;
   border: none;
-  font-family: $font-family-base;
-  font-weight: $font-weight-medium;
-  transition: background-color $transition-normal;
+  font-family: $font-family-display;
+  font-weight: $font-weight-bolder;
+  transition: all $transition-normal $ease-default;
 }
 
 @mixin primary-button {
   @include button-base;
-  background-color: $color-primary;
-  color: $color-white;
-  border-radius: $border-radius-large;
-  padding: $spacing-sm $spacing-lg;
+  @include gradient-button($gradient-blue-start, $gradient-blue-end);
+  color: $color-light-taupe;
+  border-radius: $border-radius-medium;
+  padding: $spacing-md $spacing-lg;
   font-size: $font-size-base;
-  font-weight: $font-weight-bold;
-  box-shadow: $shadow-medium;
-  
+
   &:hover {
-    background-color: $color-primary-dark;
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 
 @mixin secondary-button {
   @include button-base;
-  background-color: $color-secondary;
-  color: $color-text-primary;
-  border-radius: $border-radius-large;
+  background-color: $bg-warm-taupe;
+  color: $color-primary-gray;
+  border-radius: $border-radius-medium;
   padding: $spacing-sm $spacing-lg;
   font-size: $font-size-base;
-  
+  border: 2px solid $color-primary-gray;
+
   &:hover {
-    background-color: $color-secondary-dark;
+    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
+  }
+}
+
+@mixin gradient-button($start-color, $end-color) {
+  @include button-base;
+  background: linear-gradient(to right, $start-color, $end-color);
+  color: $color-light-taupe;
+  border-radius: $border-radius-medium;
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-size-base;
+
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
   }
 }
 
 @mixin icon-button {
   @include button-base;
   @include flex-center;
-  background-color: $color-secondary;
-  color: $color-text-primary;
+  background-color: $bg-warm-taupe;
+  color: $color-primary-gray;
   border-radius: $border-radius-circle;
   transition: background-color $transition-normal, transform $transition-normal;
   box-shadow: $shadow-medium;
-  
+
   &:hover {
-    background-color: $color-secondary-dark;
+    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
+    transform: scale(1.05);
   }
 }
 
-// Modal mixins
+// ===========================================
+// MODAL MIXINS
+// ===========================================
 @mixin modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: $color-overlay;
+  background-color: rgba(0, 0, 0, $overlay-opacity);
   @include flex-center;
   z-index: $z-index-modal;
 }
 
 @mixin modal-container {
-  background-color: $color-white;
-  border-radius: $border-radius-xl;
+  background-color: $bg-warm-taupe;
+  border-radius: $border-radius-large;
   padding: $spacing-lg;
-  box-shadow: $shadow-xl;
+  box-shadow: $shadow-modal;
   max-width: 90%;
-  animation: modalFadeIn $transition-very-slow ease-out;
+  animation: modalFadeIn $transition-very-slow $ease-out;
 }
 
-// Animation mixins
+// ===========================================
+// CARD MIXINS
+// ===========================================
+@mixin card {
+  background-color: $bg-warm-taupe;
+  border-radius: $border-radius-large;
+  padding: $spacing-lg;
+  box-shadow: $shadow-large;
+}
+
+// ===========================================
+// TOGGLE MIXINS (Minimalistic Style)
+// ===========================================
+@mixin toggle-track {
+  width: 44px;
+  height: 26px;
+  border: 2px solid $color-primary-gray;
+  border-radius: 13px;
+  background-color: transparent;
+  transition: all $transition-normal $ease-default;
+  position: relative;
+  cursor: pointer;
+
+  &.on {
+    background-color: rgba($color-primary-gray, 0.6);
+  }
+}
+
+@mixin toggle-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: left $transition-normal $ease-default;
+}
+
+// ===========================================
+// ANIMATION MIXINS
+// ===========================================
 @mixin fade-in {
-  animation: fadeIn $transition-slow ease-in-out;
+  animation: fadeIn $transition-slow $ease-default;
 }
 
 @mixin no-animations {
@@ -106,7 +206,18 @@
   transform: none !important;
 }
 
-// Responsive mixins
+@mixin subtle-hover {
+  transition: all $transition-normal $ease-default;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-large;
+  }
+}
+
+// ===========================================
+// RESPONSIVE MIXINS
+// ===========================================
 @mixin mobile {
   @media (max-width: #{$breakpoint-mobile}) {
     @content;
@@ -125,9 +236,59 @@
   }
 }
 
-// High contrast mode
+// ===========================================
+// DARK MODE MIXINS
+// ===========================================
+@mixin dark-mode {
+  @media (prefers-color-scheme: dark) {
+    @content;
+  }
+}
+
+// ===========================================
+// ACCESSIBILITY MIXINS
+// ===========================================
 @mixin high-contrast {
   .high-contrast-mode & {
     @content;
   }
-} 
+}
+
+@mixin focus-visible {
+  &:focus-visible {
+    outline: 2px solid $gradient-blue-start;
+    outline-offset: 2px;
+  }
+}
+
+// ===========================================
+// SEGMENTED CONTROL MIXIN
+// ===========================================
+@mixin segmented-control {
+  background-color: rgba($color-primary-gray, 0.08);
+  border-radius: $border-radius-medium;
+  padding: $spacing-xxs;
+  display: inline-flex;
+
+  .segment {
+    border-radius: $border-radius-small;
+    padding: $spacing-xs $spacing-md;
+    font-family: $font-family-display;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all $transition-normal $ease-default;
+    background: transparent;
+    border: none;
+    color: $color-primary-gray;
+
+    &.selected {
+      background-color: $color-primary-gray;
+      color: $color-light-taupe;
+      font-weight: $font-weight-bolder;
+    }
+
+    &:hover:not(.selected) {
+      background-color: rgba($color-primary-gray, 0.1);
+    }
+  }
+}

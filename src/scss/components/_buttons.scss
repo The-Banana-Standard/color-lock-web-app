@@ -1,112 +1,114 @@
 @use '../abstracts' as *;
+@use 'sass:color';
 
-// Primary button (Try Again button)
+// ===========================================
+// PRIMARY BUTTONS
+// ===========================================
+
+// Main action button
+.primary-button,
 .try-again-button {
   @include primary-button;
   margin-top: $spacing-md;
-  padding: $spacing-sm $spacing-lg;
-  font-size: $font-size-base;
   max-width: 200px;
 }
 
 // Try again button inside a modal
 .try-again-modal-button {
   @include secondary-button;
-  background-color: $color-secondary;
-  color: $color-text-primary;
-  border-radius: $border-radius-large;
-  padding: $spacing-sm $spacing-lg;
-  font-size: $font-size-base;
-  
-  &:hover {
-    background-color: $color-secondary-dark;
-  }
 }
 
-// Hint button
-.hint-button {
-  @include primary-button;
-  margin-top: $spacing-md;
-  padding: $spacing-xs $spacing-md;
-  background-color: $color-primary-light;
-  
-  &:hover {
-    background-color: $color-primary;
-  }
-  
-  &:active {
-    background-color: $color-primary-dark;
-  }
-}
+// ===========================================
+// GRADIENT BUTTONS
+// ===========================================
 
-// Close button
-.close-button {
-  background-color: transparent;
-  color: $color-text-light;
-  border: 1px solid #ddd;
-  border-radius: $border-radius-large;
-  padding: $spacing-sm $spacing-lg;
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
-  cursor: pointer;
-  transition: background-color $transition-normal, color $transition-normal, border-color $transition-normal;
-  
-  &:hover {
-    background-color: $color-secondary-light;
-    color: $color-text-primary;
-    border-color: #ccc;
-  }
-}
-
-// Share button
+// Share button - uses share green gradient
 .share-button {
-  @include primary-button;
-  border-radius: $border-radius-large;
+  @include gradient-button($gradient-share-start, $gradient-share-end);
+  border-radius: $border-radius-medium;
   padding: $spacing-sm $spacing-xl;
-  box-shadow: $shadow-small;
+  box-shadow: $shadow-medium;
 }
 
-// Inverse share button
-.inverse-share-button {
-  background-color: $color-white;
-  color: $color-primary;
-  border: 1px solid $color-primary;
-  border-radius: $border-radius-large;
-  padding: $spacing-sm $spacing-xl;
+// User score gradient button
+.score-button {
+  @include gradient-button($gradient-coral-start, $gradient-coral-end);
+}
+
+// Best score gradient button
+.best-score-button {
+  @include gradient-button($gradient-blue-start, $gradient-blue-end);
+}
+
+// ===========================================
+// SECONDARY BUTTONS
+// ===========================================
+
+// Close/dismiss button
+.close-button {
+  @include button-base;
+  background-color: transparent;
+  color: $color-description-text;
+  border: 2px solid $color-description-text;
+  border-radius: $border-radius-medium;
+  padding: $spacing-sm $spacing-lg;
   font-size: $font-size-base;
-  font-weight: $font-weight-bold;
-  cursor: pointer;
-  transition: background-color $transition-normal, color $transition-normal;
-  box-shadow: $shadow-small;
-  
+
   &:hover {
-    background-color: #f5f8ff;
+    background-color: rgba($gradient-pink-start, 0.1);
+    border-color: $gradient-pink-start;
+    color: $gradient-pink-start;
   }
 }
 
 // Cancel button
 .cancel-button {
+  @include button-base;
   display: block;
   margin: 0 auto;
   padding: $spacing-xs $spacing-md;
   font-size: $font-size-small;
-  background: #E9E9EB;
-  color: $color-primary;
-  border: none;
-  border-radius: $border-radius-medium;
-  cursor: pointer;
-  font-weight: $font-weight-medium;
+  background: $bg-warm-taupe;
+  color: $color-primary-gray;
+  border: 1px solid $color-description-text;
+  border-radius: $border-radius-small;
   width: 100%;
   max-width: 200px;
   text-align: center;
-  transition: background-color $transition-normal;
-  
+
   &:hover {
-    background-color: #d9d9db;
+    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
   }
 }
 
-// Icon buttons
+// Inverse share button
+.inverse-share-button {
+  @include button-base;
+  background-color: $bg-warm-taupe;
+  color: $gradient-share-start;
+  border: 2px solid $gradient-share-start;
+  border-radius: $border-radius-medium;
+  padding: $spacing-sm $spacing-xl;
+  font-size: $font-size-base;
+  box-shadow: $shadow-small;
+
+  &:hover {
+    background-color: rgba($gradient-share-start, 0.1);
+  }
+}
+
+// ===========================================
+// HINT BUTTON
+// ===========================================
+.hint-button {
+  @include gradient-button($gradient-pink-start, $gradient-pink-end);
+  margin-top: $spacing-md;
+  padding: $spacing-xs $spacing-md;
+}
+
+// ===========================================
+// ICON BUTTONS
+// ===========================================
 .settings-button,
 .stats-button,
 .info-button,
@@ -122,48 +124,91 @@
 
 .home-button {
   top: 15px;
-  
-  &:hover {
-    background-color: $color-secondary-dark;
-  }
 }
 
 .settings-button {
   top: 65px;
-  
+
   &:hover {
-    background-color: $color-secondary-dark;
-    transform: rotate(30deg);
+    transform: rotate(30deg) scale(1.05);
   }
 }
 
 .stats-button {
   top: 115px;
-  
-  &:hover {
-    background-color: $color-secondary-dark;
-  }
 }
 
 .info-button {
   top: 165px;
-  
+}
+
+// Gradient icon button variants (taupe background with colored icons)
+.icon-button--coral {
+  background-color: $bg-warm-taupe;
+
+  svg {
+    color: $gradient-coral-start;
+    fill: $gradient-coral-start;
+  }
+
   &:hover {
-    background-color: $color-secondary-dark;
+    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
   }
 }
 
-// Share stats button
+.icon-button--blue {
+  background-color: $bg-warm-taupe;
+
+  svg {
+    color: $gradient-blue-start;
+    fill: $gradient-blue-start;
+  }
+
+  &:hover {
+    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
+  }
+}
+
+.icon-button--green {
+  background-color: $bg-warm-taupe;
+
+  svg {
+    color: $gradient-green-start;
+    fill: $gradient-green-start;
+  }
+
+  &:hover {
+    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
+  }
+}
+
+.icon-button--pink {
+  background-color: $bg-warm-taupe;
+
+  svg {
+    color: $gradient-pink-start;
+    fill: $gradient-pink-start;
+  }
+
+  &:hover {
+    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
+  }
+}
+
+// ===========================================
+// SHARE STATS BUTTON
+// ===========================================
 .share-stats-button {
-  @include primary-button;
+  @include gradient-button($gradient-share-start, $gradient-share-end);
   display: flex;
   align-items: center;
   gap: $spacing-xs;
   padding: $spacing-sm $spacing-lg;
-  font-weight: $font-weight-bold;
 }
 
-// Social buttons
+// ===========================================
+// SOCIAL BUTTONS
+// ===========================================
 .social-buttons {
   display: flex;
   gap: 20px;
@@ -175,26 +220,46 @@
   height: 40px;
   border-radius: $border-radius-circle;
   border: none;
-  background-color: $color-secondary;
+  background-color: $bg-warm-taupe;
   @include flex-center;
   cursor: pointer;
   transition: transform $transition-normal, background-color $transition-normal;
-  
+  box-shadow: $shadow-small;
+
   &:hover {
     transform: scale(1.1);
-    background-color: $color-secondary-dark;
+    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
+  }
+
+  // Specific social button colors on hover
+  &.twitter:hover,
+  &.x:hover {
+    background-color: #1da1f2;
+    color: white;
+  }
+
+  &.facebook:hover {
+    background-color: #4267B2;
+    color: white;
+  }
+
+  &.instagram:hover {
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    color: white;
   }
 }
 
-// Modal close button
+// ===========================================
+// MODAL CLOSE BUTTON
+// ===========================================
 .modal-close,
 .stats-modal .close-button {
   position: absolute;
   top: 15px;
   right: 15px;
-  background-color: $color-secondary;
+  background-color: rgba($color-primary-gray, 0.1);
   border: none;
-  color: $color-text-primary;
+  color: $color-primary-gray;
   font-size: 22px;
   cursor: pointer;
   padding: $spacing-xs;
@@ -202,30 +267,42 @@
   height: 36px;
   @include flex-center;
   border-radius: $border-radius-circle;
-  transition: all $transition-normal;
+  transition: all $transition-normal $ease-default;
   z-index: 10;
-  box-shadow: $shadow-small;
-  
+
   &:hover {
-    background-color: $color-secondary-dark;
+    background-color: rgba($gradient-pink-start, 0.2);
+    color: $gradient-pink-start;
     transform: scale(1.05);
   }
 }
 
-// Game tiles
-.tile, 
-.game-tile, 
+// ===========================================
+// GAME TILES (Cursor)
+// ===========================================
+.tile,
+.game-tile,
 div[class*="tile"],
 [data-tile],
 .board-tile {
-  cursor: pointer; /* Ensure tiles have pointer cursor */
+  cursor: pointer;
 }
 
-// Tutorial elements
+// ===========================================
+// TUTORIAL ELEMENTS
+// ===========================================
 .tutorial-continue-button,
 button[class*="tutorial"],
 [class*="tutorial"][onClick],
 .tutorial-cell-highlight,
 .tutorial-overlay [role="button"] {
-  cursor: pointer !important; /* Ensure tutorial elements have pointer cursor */
-} 
+  cursor: pointer !important;
+}
+
+// ===========================================
+// SEGMENTED CONTROL
+// ===========================================
+.segmented-control,
+.difficulty-control {
+  @include segmented-control;
+}

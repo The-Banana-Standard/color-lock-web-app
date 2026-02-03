@@ -1,5 +1,13 @@
 @use '../abstracts' as *;
 
+// ===========================================
+// Arvo Font Import (Google Fonts)
+// ===========================================
+@import url('https://fonts.googleapis.com/css2?family=Arvo:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+// ===========================================
+// Base Typography
+// ===========================================
 body {
   font-family: $font-family-base;
   color: $color-text-primary;
@@ -7,24 +15,35 @@ body {
   line-height: 1.5;
 }
 
+// ===========================================
+// Headings - Use Arvo for branded look
+// ===========================================
 h1, h2, h3, h4, h5, h6 {
-  font-family: $font-family-base;
-  font-weight: $font-weight-bold;
+  font-family: $font-family-display;
+  font-weight: $font-weight-bolder;
   margin-top: 0;
 }
 
 h1 {
-  font-size: $font-size-xxl;
-  margin-bottom: $spacing-xs;
+  font-size: $font-size-hero;
+  font-style: italic;
+  margin-bottom: $spacing-sm;
 }
 
 h2 {
-  font-size: $font-size-xl;
-  margin-bottom: $spacing-xs;
+  font-size: $font-size-modal-title;
+  font-style: italic;
+  margin-bottom: $spacing-sm;
 }
 
 h3 {
-  font-size: $font-size-larger;
+  font-size: $font-size-section;
+  font-style: italic;
+  margin-bottom: $spacing-xs;
+}
+
+h4 {
+  font-size: $font-size-large;
   margin-bottom: $spacing-xs;
 }
 
@@ -33,16 +52,102 @@ p {
   margin-bottom: $spacing-md;
 }
 
-// Game title specific font
-.game-title-font {
-  font-family: $font-family-base;
-  font-weight: $font-weight-bold;
+// ===========================================
+// Display Typography Classes
+// ===========================================
+
+// Hero title - large branded heading
+.hero-title {
+  font-family: $font-family-display;
+  font-size: $font-size-hero;
+  font-weight: $font-weight-bolder;
+  font-style: italic;
   letter-spacing: 0.5px;
 }
 
-// Color Lock specific font
+// Modal title
+.modal-title-text {
+  font-family: $font-family-display;
+  font-size: $font-size-modal-title;
+  font-weight: $font-weight-bolder;
+  font-style: italic;
+}
+
+// Section title
+.section-title {
+  font-family: $font-family-display;
+  font-size: $font-size-section;
+  font-weight: $font-weight-bolder;
+  font-style: italic;
+}
+
+// Welcome text (non-italic)
+.welcome-text {
+  font-family: $font-family-display;
+  font-size: $font-size-section;
+  font-weight: $font-weight-bolder;
+}
+
+// ===========================================
+// Game Title Font (COLOR LOCK branding)
+// ===========================================
+.game-title-font {
+  font-family: $font-family-display;
+  font-weight: $font-weight-bolder;
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
 .color-lock-font {
-  font-family: $font-family-base;
-  font-weight: $font-weight-bold;
+  font-family: $font-family-display;
+  font-weight: $font-weight-bolder;
+  font-style: italic;
   font-size: $font-size-base;
-} 
+}
+
+// ===========================================
+// Description/Secondary Text
+// ===========================================
+.description-text {
+  color: $color-description-text;
+  font-size: $font-size-small;
+}
+
+.caption-text {
+  font-size: $font-size-smaller;
+  color: $color-text-secondary;
+}
+
+// ===========================================
+// Gradient Text Utility
+// ===========================================
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.gradient-coral {
+  background: linear-gradient(to right, $gradient-coral-start, $gradient-coral-end);
+}
+
+.gradient-gold {
+  background: linear-gradient(to right, $gradient-gold-start, $gradient-gold-end);
+}
+
+.gradient-green {
+  background: linear-gradient(to right, $gradient-green-start, $gradient-green-end);
+}
+
+.gradient-blue {
+  background: linear-gradient(to right, $gradient-blue-start, $gradient-blue-end);
+}
+
+.gradient-pink {
+  background: linear-gradient(to right, $gradient-pink-start, $gradient-pink-end);
+}
+
+.gradient-share {
+  background: linear-gradient(to right, $gradient-share-start, $gradient-share-end);
+}

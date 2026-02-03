@@ -6,6 +6,7 @@ import { AppSettings, DifficultyLevel } from '../types/settings';
 import { useTutorialContext } from '../contexts/TutorialContext';
 import HamburgerMenu from './HamburgerMenu';
 import SignUpButton from './SignUpButton';
+import GradientTitle from './GradientTitle';
 
 // Updated GameHeader Props to include menu state/handlers
 interface GameHeaderProps {
@@ -112,8 +113,12 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       {/* Top Card Content */}
       <div className="top-card-content">
-        <h1 style={{ color: isTutorialMode ? 'red' : 'inherit' }}>
-          {isTutorialMode ? 'Tutorial' : 'Color Lock'}
+        <h1>
+          {isTutorialMode ? (
+            <span style={{ color: 'red' }}>Tutorial</span>
+          ) : (
+            <GradientTitle fontSize="3.5rem" />
+          )}
         </h1>
         <div className="target-row">
           <span>Target:</span>
@@ -221,7 +226,7 @@ const GameControls: React.FC<GameControlsProps> = (props) => {
         puzzle={props.puzzle}
         settings={props.settings}
         getColorCSS={props.getColorCSS}
-        onHintClick={props.onHintClick}
+        onBotSolutionClick={props.onHintClick}
         showHintButton={!isTutorialMode || showHintButton}
         isMenuOpen={props.isMenuOpen}
         toggleMenu={props.toggleMenu}

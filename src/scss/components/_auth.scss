@@ -1,4 +1,5 @@
 // Import color module
+@use '../abstracts' as *;
 @use 'sass:color';
 
 // Auth Container
@@ -224,18 +225,20 @@
 }
 
 .signup-button {
-  background-color: #4a90e2;
-  color: white;
-  border: none;
+  background-color: $color-secondary;
+  color: $color-primary-gray;
+  border: 1px solid $color-primary-gray;
   border-radius: 6px;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
-  
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+
   &:hover {
-    background-color: color.scale(#4a90e2, $lightness: -10%);
+    background-color: color.scale($bg-warm-taupe, $lightness: -5%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
 }
 

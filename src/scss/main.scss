@@ -33,7 +33,7 @@
   align-items: center;
   min-height: 100vh;
   width: 100%;
-  background-color: #fff; // Match background
+  background-color: $bg-warm-taupe; // Match new warm taupe background
   position: fixed; // Keep it centered covering everything
   top: 0;
   left: 0;
@@ -42,15 +42,15 @@
   .spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid rgba($color-primary, 0.2);
-    border-left-color: $color-primary;
+    border: 4px solid rgba($color-primary-gray, 0.2);
+    border-left-color: $color-primary-gray;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-  
+
   p {
     margin-top: $spacing-md;
-    color: $color-text-secondary;
+    color: $color-description-text;
   }
 }
 
@@ -91,68 +91,62 @@
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(255, 255, 255, 0.95);
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: rgba($bg-warm-taupe, 0.98);
+  border-radius: $border-radius-medium;
+  box-shadow: $shadow-large;
   padding: 15px 20px;
   z-index: 1000;
   max-width: 90%;
   width: 500px;
-  
+
   &.tutorial-step-modal-top {
     top: 20px;
   }
-  
+
   &.tutorial-step-modal-bottom {
     bottom: 20px;
   }
-  
+
   // Special styling for COLOR_SELECTION step
   &.tutorial-color-selection-step {
-    background-color: rgba(255, 255, 255, 1); // Fully opaque
-    border: 3px solid #4a90e2; // Blue border
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba(74, 144, 226, 0.3);
+    background-color: $bg-warm-taupe;
+    border: 3px solid $gradient-blue-start;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba($gradient-blue-start, 0.3);
     animation: tutorial-modal-pulse 2s infinite;
-    
+
     .tutorial-step-title {
-      color: #4a90e2;
-      font-weight: bold;
+      color: $gradient-blue-start;
+      font-weight: $font-weight-bolder;
       font-size: 1.3rem;
     }
-    
+
     .tutorial-step-message {
       font-size: 1.1rem;
     }
   }
-  
+
   .tutorial-step-content {
     text-align: center;
-    
+
     .tutorial-step-title {
       margin: 0 0 10px 0;
-      color: #333;
+      color: $color-text-primary;
+      font-family: $font-family-display;
       font-size: 1.2rem;
+      font-weight: $font-weight-bolder;
     }
-    
+
     .tutorial-step-message {
       margin: 0 0 15px 0;
       font-size: 1rem;
       line-height: 1.5;
+      color: $color-description-text;
     }
-    
+
     .tutorial-continue-button {
-      background-color: #4a90e2;
-      color: white;
-      border: none;
-      border-radius: 5px;
+      @include gradient-button($gradient-blue-start, $gradient-blue-end);
       padding: 8px 16px;
       font-size: 1rem;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      
-      &:hover {
-        background-color: color.scale(#4a90e2, $lightness: -10%);
-      }
     }
   }
 }
@@ -280,9 +274,9 @@
     }
     
     .try-again-button {
-      background-color: #4a90e2 !important;
-      color: white !important;
-      border: 2px solid #4a90e2 !important;
+      @include gradient-button($gradient-blue-start, $gradient-blue-end);
+      color: $color-light-taupe !important;
+      // border: 2px solid #4a90e2 !important;
       
       &:hover {
         background-color: color.scale(#4a90e2, $lightness: -10%) !important;
@@ -291,9 +285,9 @@
     }
     
     .win-close-button {
-      background-color: white !important;
-      color: #4a90e2 !important;
-      border: 2px solid #4a90e2 !important;
+      background-color: $color-light-taupe !important;
+      color: $gradient-blue-start !important;
+      border: 2px solid $gradient-blue-start !important;
       
       &:hover {
         background-color: rgba(74, 144, 226, 0.1) !important;
@@ -310,8 +304,8 @@
   justify-content: flex-start;
   min-height: 100vh;
   padding: 2rem 1rem;
-  background-color: #ffffff;
-  color: #333;
+  background-color: $bg-warm-taupe;
+  color: $color-text-primary;
 }
 
 .landing-header {
@@ -346,15 +340,15 @@
   }
 
   &.instagram {
-    color: #cc0099;  /* Pink/magenta from title gradient */
+    color: #d96a7d;
   }
 
   &.facebook {
-    color: #0066ff;  /* Blue from title gradient */
+    color: #42b3f4;
   }
 
   &.reddit {
-    color: #ff6600;  /* Orange from title gradient */
+    color: #fc9e7a;
   }
 }
 
@@ -400,44 +394,36 @@
   );
 }
 
-/* Remove old color classes */
-.title-letter,
-.color-red, 
-.color-orange, 
-.color-green, 
-.color-blue, 
-.color-purple, 
-.color-yellow,
-.text-red, 
-.text-orange, 
-.text-green, 
-.text-blue, 
-.text-yellow, 
-.text-purple,
-.color-blue-purple {
-  display: none;
-}
-
-.title-space {
-  margin: 0 0.1em;
-}
-
 .global-stats-container {
-  background-color: #f7f7f7;
-  border-radius: 12px;
+  background-color: rgba($color-primary-gray, 0.08);
+  border-radius: $border-radius-medium;
   padding: 1.2rem;
   width: 100%;
   max-width: 400px;
   margin-bottom: 2rem;
   text-align: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: $shadow-medium;
 }
 
 .global-stats-container h2 {
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.3rem;
-  color: #333;
+  font-family: $font-family-display;
+  font-weight: $font-weight-bolder;
+  color: $color-primary-gray;
+}
+
+.global-stats-container .stat-value.average-score {
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
+  color: $color-primary-gray;
+}
+
+.global-stats-container .stat-value.best-score {
+  // Keeps the default gradient styling from .stat-value
 }
 
 .difficulty-switcher {
@@ -450,10 +436,10 @@
 .difficulty-option {
   flex: 1;
   padding: 0.5rem 1rem;
-  border: 2px solid #ddd;
+  border: 2px solid rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   background-color: transparent;
-  color: #666;
+  color: $color-primary-gray;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -463,42 +449,39 @@
     background-color: rgba(0, 0, 0, 0.03);
   }
 
-  // Easy - Green
+  // Easy - Green: #2ecc71
   &.easy {
     &:hover:not(.active) {
-      border-color: rgba(76, 175, 80, 0.5);
-      color: #4CAF50;
+      border-color: #afc053;
+      color: #afc053;
     }
     &.active {
-      border-color: #4CAF50;
-      color: #4CAF50;
-      background-color: rgba(76, 175, 80, 0.08);
+      border-color: #afc053;
+      color: #afc053;
     }
   }
 
-  // Medium - Gold
+  // Medium - Gold: #f1c40f
   &.medium {
     &:hover:not(.active) {
-      border-color: rgba(255, 193, 7, 0.5);
-      color: #F9A825;
+      border-color: #fb997f;
+      color: #fb997f;
     }
     &.active {
-      border-color: #F9A825;
-      color: #F9A825;
-      background-color: rgba(249, 168, 37, 0.08);
+      border-color: #fb997f;
+      color: #fb997f;
     }
   }
 
-  // Hard - Red
+  // Hard - Red: #e74c3c
   &.hard {
     &:hover:not(.active) {
-      border-color: rgba(244, 67, 54, 0.5);
-      color: #F44336;
+      border-color: #d16381;
+      color: #d16381;
     }
     &.active {
-      border-color: #F44336;
-      color: #F44336;
-      background-color: rgba(244, 67, 54, 0.08);
+      border-color: #d16381;
+      color: #d16381;
     }
   }
 }
@@ -511,52 +494,57 @@
 }
 
 .stat-card {
-  background-color: #fff;
-  border-radius: 8px;
+  background-color: $bg-warm-taupe;
+  border-radius: $border-radius-small;
   padding: 0.8rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: $shadow-small;
 }
 
 .stat-value {
   font-size: 2.5rem;
-  font-weight: bold;
+  font-family: $font-family-display;
+  font-weight: $font-weight-bolder;
   margin-bottom: 0.3rem;
-  color: #3478F6;
+  background: linear-gradient(to right, $gradient-blue-start, $gradient-blue-end);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .stat-label {
   font-size: 1.1rem;
-  color: #666;
+  color: $color-description-text;
 }
 
 .stats-highlight {
   font-size: 0.9rem;
   margin: 0;
   padding: 0.6rem;
-  background-color: #fff;
-  border-radius: 8px;
-  color: #333;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: $bg-warm-taupe;
+  border-radius: $border-radius-small;
+  color: $color-text-primary;
+  box-shadow: $shadow-small;
 }
 
 .landing-stats-button {
   display: block;
   margin: 1rem auto 0 auto;
   background-color: transparent;
-  color: #3478F6;
-  border: 1px solid #3478F6;
-  border-radius: 6px;
+  color: $color-primary-gray;
+  border: 2px solid $color-primary-gray;
+  border-radius: $border-radius-small;
   padding: 0.4rem 1rem;
   font-size: 1rem;
-  font-weight: 500;
+  font-family: $font-family-display;
+  font-weight: $font-weight-bolder;
   cursor: pointer;
-  transition: all 0.2s ease;
-  
+  transition: all $transition-normal $ease-default;
+
   &:hover:not(:disabled) {
-    background-color: #3478F6;
-    color: white;
+    background-color: $color-primary-gray;
+    color: $color-light-taupe;
   }
-  
+
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -575,74 +563,50 @@
 }
 
 .landing-signin-button {
-  background-color: #3478F6;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  @include primary-button;
   width: 250px;
   margin-bottom: 1rem;
 }
 
 .landing-signin-button:hover {
-  background-color: #2861d6;
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .landing-play-button {
-  background-color: #3478F6;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  @include primary-button;
   width: 250px;
   margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, $gradient-blue-start, $gradient-blue-end);
 }
 
 .landing-play-button:hover {
-  background-color: #2861d6;
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .landing-signin-link {
   background: none;
   border: none;
-  color: #666;
+  color: $color-description-text;
   font-size: 0.9rem;
   cursor: pointer;
   text-decoration: underline;
   padding: 0.5rem;
-  transition: color 0.2s ease;
+  transition: color $transition-normal $ease-default;
 }
 
 .landing-signin-link:hover {
-  color: #3478F6;
+  color: $gradient-blue-start;
 }
 
 .landing-guest-button {
-  background-color: white;
-  color: #3478F6;
-  border: 2px solid #3478F6;
-  border-radius: 12px;
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  @include secondary-button;
   width: 250px;
 }
 
 .landing-guest-button:hover {
-  background-color: rgba(52, 120, 246, 0.1);
+  background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
 }
 
 /* Logo Animation Styles */
@@ -655,16 +619,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #fff;
+  background-color: $bg-warm-taupe;
   z-index: 1000;
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 5px solid rgba(52, 120, 246, 0.3);
+  border: 5px solid rgba($color-primary-gray, 0.3);
   border-radius: 50%;
-  border-top-color: #3478F6;
+  border-top-color: $color-primary-gray;
   animation: spin 1s ease-in-out infinite;
 }
 
@@ -745,22 +709,20 @@
 }
 
 .auth-modal {
-  background-color: #fff;
-  border-radius: 12px;
+  @include modal-container;
   padding: 2rem;
   width: 90%;
   max-width: 400px;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .modal-close {
   position: absolute;
   top: 15px;
   right: 15px;
-  background-color: #f0f0f0;
+  background-color: rgba($color-primary-gray, 0.1);
   border: none;
-  color: #333;
+  color: $color-primary-gray;
   font-size: 22px;
   cursor: pointer;
   padding: 4px;
@@ -769,13 +731,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: $border-radius-circle;
+  transition: all $transition-normal $ease-default;
+  box-shadow: $shadow-small;
 }
 
 .modal-close:hover {
-  background-color: #e0e0e0;
+  background-color: rgba($gradient-pink-start, 0.2);
+  color: $gradient-pink-start;
   transform: scale(1.05);
 }
 
@@ -879,7 +842,7 @@
   top: 50px; // Below button
   left: 0;
   right: auto;
-  background-color: $color-white;
+  background-color: $bg-warm-taupe;
   border-radius: $border-radius-medium;
   box-shadow: $shadow-large;
   padding: $spacing-sm 0;
@@ -896,21 +859,23 @@
   text-align: left;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  color: #333;
+  font-family: $font-family-display;
+  color: $color-text-primary;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
+  transition: background-color $transition-normal $ease-default;
 }
 
 .hamburger-menu-item:hover {
-  background-color: #f5f5f5;
+  background-color: rgba($color-primary-gray, 0.1);
 }
 
 .hamburger-menu-item svg {
   width: 18px;
-  color: #666;
+  color: $color-primary-gray;
 }
 
 .hamburger-menu-item-signup {
@@ -1028,7 +993,7 @@
   border-radius: 50%;
   background-color: $color-secondary;
   color: $color-text-primary;
-  border: none;
+  border: 1px solid $color-primary-gray;
   display: flex;
   align-items: center;
   justify-content: center;

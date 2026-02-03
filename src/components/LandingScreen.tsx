@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInstagram, faFacebook, faRedditAlien } from '@fortawesome/free-brands-svg-icons';
 import { DifficultyLevel, defaultSettings } from '../types/settings';
 import { loadSettings, saveSettings } from '../utils/storageUtils';
+import GradientTitle from './GradientTitle';
 
 interface DailyScoreStats {
   lowestScore: number | null;
@@ -276,11 +277,7 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
     <div className="landing-container app-fade-in">
       <div className="landing-header">
         <img src="/tbs_logo.png" alt="The Banana Standard" className="landing-logo" />
-        <h1 className="landing-title">
-          <span className="title-word color-word-1">Color</span>
-          <span className="title-space">  </span>
-          <span className="title-word color-word-2">Lock</span>
-        </h1>
+        <GradientTitle className="landing-title" fontSize="4.2rem" />
         {isRegularUser && currentUser?.displayName && (
             <p className="welcome-message">Welcome, {currentUser.displayName}!</p>
         )}
@@ -320,7 +317,7 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
           <>
             <div className="stats-grid">
               <div className="stat-card">
-                <div className="stat-value">
+                <div className="stat-value average-score">
                   {currentAverageScore !== null && currentAverageScore !== undefined
                     ? Number(currentAverageScore).toFixed(1)
                     : '—'}
@@ -328,7 +325,7 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
                 <div className="stat-label">Average Score</div>
               </div>
               <div className="stat-card">
-                <div className="stat-value">
+                <div className="stat-value best-score">
                   {currentBestScore !== null && currentBestScore !== undefined ? currentBestScore : '—'}
                 </div>
                 <div className="stat-label">Best Score</div>

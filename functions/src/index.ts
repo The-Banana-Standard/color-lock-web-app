@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { logger as v2Logger } from "firebase-functions/v2";
 import { calculateEloScore } from "./eloUtils";
 import { GameStatistics, defaultStats } from "../../src/types/stats";
@@ -309,8 +310,9 @@ async function sendBestScoreNotifications(
 
     // Step 4: Send notifications
     const difficultyDisplay = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+    const difficultyEmoji = difficulty === "easy" ? "🟢" : difficulty === "medium" ? "🟡" : "🔴";
     const notificationTitle = "New Low Score!";
-    const notificationBody = `A user just set a new low score on today's ${difficultyDisplay} Color Lock`;
+    const notificationBody = `A user just set a new low score on today's ${difficultyEmoji} ${difficultyDisplay} Color Lock`;
 
     for (const userId of usersToNotify) {
         try {
@@ -361,6 +363,79 @@ async function sendBestScoreNotifications(
 
     logger.info(`sendBestScoreNotifications: Complete`, { sent: sentCount, skipped: skippedCount, errors: errorCount });
 }
+
+/**
+ * Firestore trigger that sends best score notifications when a new best score is written.
+ * Triggers on creates and updates to bestScores/{docId} documents.
+ */
+export const onBestScoreWritten = onDocumentWritten(
+    {
+        document: "bestScores/{docId}",
+        memory: "256MiB",
+        timeoutSeconds: 60,
+    },
+    async (event) => {
+        const before = event.data?.before?.data();
+        const after = event.data?.after?.data();
+
+        // Skip if document was deleted
+        if (!after) {
+            logger.info("onBestScoreWritten: Document deleted, skipping");
+            return;
+        }
+
+        // Skip if score didn't change (same user updating other fields)
+        if (before?.userScore === after.userScore && before?.userId === after.userId) {
+            logger.info("onBestScoreWritten: Score unchanged, skipping");
+            return;
+        }
+
+        // Parse difficulty from docId (format: YYYY-MM-DD-difficulty)
+        const docId = event.params.docId;
+        const parts = docId.split("-");
+        if (parts.length !== 4) {
+            logger.warn("onBestScoreWritten: Invalid docId format", { docId });
+            return;
+        }
+        const validDifficulties = [DifficultyLevel.Easy, DifficultyLevel.Medium, DifficultyLevel.Hard];
+        const difficultyStr = parts[3];
+        if (!validDifficulties.includes(difficultyStr as DifficultyLevel)) {
+            logger.warn("onBestScoreWritten: Invalid difficulty", { docId, difficulty: difficultyStr });
+            return;
+        }
+        const difficulty = difficultyStr as DifficultyLevel;
+        const puzzleId = parts.slice(0, 3).join("-"); // 'YYYY-MM-DD'
+
+        // Fetch bot score from puzzle document
+        const puzzleDoc = await db.collection("puzzlesV2").doc(docId).get();
+        const botMoves = puzzleDoc.data()?.algoScore;
+
+        if (typeof botMoves !== "number") {
+            logger.warn("onBestScoreWritten: Could not fetch bot score", { docId });
+            return;
+        }
+
+        // Check if score qualifies for notification
+        if (!qualifiesForBestScoreNotification(after.userScore, botMoves, difficulty)) {
+            logger.info("onBestScoreWritten: Score doesn't meet threshold", {
+                userScore: after.userScore,
+                botMoves,
+                difficulty
+            });
+            return;
+        }
+
+        logger.info("onBestScoreWritten: Sending notifications", {
+            puzzleId,
+            difficulty,
+            userScore: after.userScore,
+            userId: after.userId
+        });
+
+        // Send notifications
+        await sendBestScoreNotifications(puzzleId, difficulty, after.userScore, after.userId);
+    }
+);
 
 async function getLowestDailyScore(
     puzzleId: string,
@@ -478,7 +553,6 @@ export const recordPuzzleHistory = onCall(
         });
 
         let v2Writes: Array<{ diffKey: DifficultyLevel; moves: number }> = [];
-        let bestScoresWritten = false;
 
         // Fetch user display name for bestScores
         let userName = `User_${userId.substring(0, 6)}`;
@@ -687,7 +761,6 @@ export const recordPuzzleHistory = onCall(
                                             statesCount: payload.states?.length || 0,
                                             actionsCount: payload.actions?.length || 0
                                         });
-                                        bestScoresWritten = true;
                                     } else {
                                         logger.info(`[BEST_SCORES] Not writing - current score (${moves}) is not better than existing (${existingBestScoreVal})`, {
                                             userId,
@@ -1023,15 +1096,7 @@ export const recordPuzzleHistory = onCall(
             logger.warn("Failed to update dailyScoresV2 (write/stats)", { puzzleId, difficulty, userId }, e);
         }
 
-        // Send best score notifications if applicable
-        // Only notify when: win + bestScores was written + score meets difficulty threshold
-        if (isWin && bestScoresWritten && qualifiesForBestScoreNotification(moves, botMoves, difficulty)) {
-            try {
-                await sendBestScoreNotifications(puzzleId, difficulty, moves, userId);
-            } catch (notifyError) {
-                logger.warn("Failed to send best score notifications", { puzzleId, difficulty }, notifyError);
-            }
-        }
+        // Best score notifications are now handled by the onBestScoreWritten Firestore trigger
 
         return { success: true, firstTry, firstToBeatBot, elo };
     }

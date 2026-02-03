@@ -908,9 +908,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const resetLostState = () => {
       if (puzzle) {
           console.log(`[STATS-EVENT ${new Date().toISOString()}] Closing lost game modal - puzzle ID: ${puzzle.dateString}, isSolved: ${puzzle.isSolved}, isLost: ${puzzle.isLost}`);
-          // This function is called by the LostGameModal's onClose prop
-          // It doesn't directly trigger any stats updates, which is correct
-          // The modal's "Try Again" button calls handleTryAgain separately
+          setPuzzle(prevPuzzle => prevPuzzle ? {...prevPuzzle, isLost: false} : null);
       }
   };
 
