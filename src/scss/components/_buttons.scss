@@ -157,12 +157,17 @@
 .info-button,
 .home-button {
   @include icon-button;
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  border-radius: $border-radius-circle;
-  z-index: 10;
-  right: 15px;
+
+  // Wrap overrides in & {} to comply with Sass mixed-decls rule
+  & {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-circle;
+    z-index: 10;
+    right: 15px;
+    box-shadow: none;
+  }
 }
 
 .home-button {

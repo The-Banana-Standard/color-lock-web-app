@@ -37,18 +37,18 @@
   @include flex-column;
   align-items: center;
   background-color: $color-secondary;
-  color: $bg-warm-taupe;
+  color: $color-primary-gray;
   padding: $spacing-md $spacing-lg;
   border-radius: $border-radius-large;
-  box-shadow: 0 2px 10px rgba($bg-warm-taupe, 0.3);
+  box-shadow: 0 2px 10px rgba($bg-dark-mode, 0.3);
   margin-bottom: $spacing-lg;
   max-width: 500px;
   width: 100%;
   position: relative;
 
-  // Force all text elements to use $bg-warm-taupe
+  // Force all text elements to use $color-primary-gray
   h1, h2, h3, p, span, label, div {
-    color: $bg-warm-taupe;
+    color: $color-primary-gray;
   }
 
   h1 {

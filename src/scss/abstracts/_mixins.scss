@@ -120,13 +120,24 @@
   @include flex-center;
   background-color: $bg-warm-taupe;
   color: $color-primary-gray;
+  border: 1px solid $color-primary-gray;
   border-radius: $border-radius-circle;
   transition: background-color $transition-normal, transform $transition-normal;
   box-shadow: $shadow-medium;
 
   &:hover {
-    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
+    background-color: rgba($color-primary-gray, 0.1);
     transform: scale(1.05);
+  }
+
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+    border-color: $color-light-taupe;
+    color: $color-light-taupe;
+
+    &:hover {
+      background-color: rgba($color-light-taupe, 0.15);
+    }
   }
 }
 

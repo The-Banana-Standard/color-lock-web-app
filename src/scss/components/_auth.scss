@@ -59,9 +59,13 @@
 }
 
 .auth-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
   h2 {
     font-size: 1.5rem;
-    color: #333;
+    color: $color-text-primary;
     margin-top: 0;
     margin-bottom: 1rem;
     text-align: center;
@@ -70,10 +74,14 @@
       color: $color-light-taupe;
     }
   }
+
+  .form-group {
+    width: 100%;
+  }
 }
 
 .auth-subtitle {
-  color: #666;
+  color: $color-description-text;
   font-size: 0.9rem;
   text-align: center;
   margin-bottom: 1.5rem;
@@ -92,7 +100,7 @@
   .toggle-button {
     background: none;
     border: none;
-    color: #4a90e2;
+    color: $gradient-blue-start;
     font-size: 0.85rem;
     cursor: pointer;
     padding: 0;
@@ -100,14 +108,14 @@
 
     &:hover {
       text-decoration: underline;
-      color: color.scale(#4a90e2, $lightness: -10%);
+      color: $gradient-blue-end;
     }
 
     @include dark-mode {
-      color: $gradient-blue-start;
+      color: $gradient-green-start;
 
       &:hover {
-        color: $gradient-blue-end;
+        color: $gradient-green-end;
       }
     }
   }
@@ -120,7 +128,7 @@
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
-    color: #555;
+    color: $color-text-primary;
 
     @include dark-mode {
       color: $color-light-taupe;
@@ -132,13 +140,13 @@
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  border: 1px solid $color-border;
+  border-radius: $border-radius-small;
+  transition: border-color $transition-normal, box-shadow $transition-normal;
 
   &:focus {
-    border-color: #4a90e2;
-    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+    border-color: $gradient-blue-start;
+    box-shadow: 0 0 0 2px rgba($gradient-blue-start, 0.2);
     outline: none;
   }
 
@@ -162,14 +170,16 @@
 .auth-button {
   display: block;
   width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
   padding: 0.875rem;
   font-size: 1rem;
   font-weight: 600;
   text-align: center;
   border: none;
-  border-radius: 6px;
+  border-radius: $border-radius-medium;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all $transition-normal $ease-default;
 
   &:disabled {
     opacity: 0.7;
@@ -177,30 +187,37 @@
   }
 
   &.primary-button {
-    background-color: #4a90e2;
+    background: linear-gradient(to right, $gradient-blue-start, $gradient-blue-end);
     color: white;
 
     &:hover:not(:disabled) {
-      background-color: color.scale(#4a90e2, $lightness: -10%);
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    @include dark-mode {
+      background: linear-gradient(to right, $gradient-green-start, $gradient-green-end);
+      color: $color-light-taupe;
     }
   }
 
   &.guest-button {
-    background-color: white;
-    color: #4a90e2;
-    border: 1px solid #4a90e2;
+    background-color: $bg-warm-taupe;
+    color: $gradient-blue-start;
+    border: 2px solid $gradient-blue-start;
 
     &:hover:not(:disabled) {
-      background-color: rgba(74, 144, 226, 0.1);
+      background-color: color.scale($bg-warm-taupe, $lightness: -5%);
+      transform: translateY(-1px);
     }
 
     @include dark-mode {
       background-color: $bg-dark-elevated;
-      color: $gradient-blue-start;
-      border-color: $gradient-blue-start;
+      color: $gradient-green-start;
+      border-color: $gradient-green-start;
 
       &:hover:not(:disabled) {
-        background-color: rgba($gradient-blue-start, 0.15);
+        background-color: color.adjust($bg-dark-elevated, $lightness: 5%);
       }
     }
   }
@@ -216,12 +233,12 @@
     content: '';
     flex: 1;
     height: 1px;
-    background-color: #ddd;
+    background-color: $color-border;
   }
 
   span {
     padding: 0 1rem;
-    color: #777;
+    color: $color-description-text;
     font-size: 0.875rem;
   }
 
@@ -242,7 +259,7 @@
   text-align: center;
 
   p {
-    color: #666;
+    color: $color-description-text;
     font-size: 0.9rem;
     margin: 0;
 
@@ -254,7 +271,7 @@
   .toggle-button {
     background: none;
     border: none;
-    color: #4a90e2;
+    color: $gradient-pink-start;
     font-weight: 600;
     cursor: pointer;
     padding: 0;
@@ -262,14 +279,14 @@
     text-decoration: underline;
 
     &:hover {
-      color: color.scale(#4a90e2, $lightness: -10%);
+      color: $gradient-pink-end;
     }
 
     @include dark-mode {
-      color: $gradient-blue-start;
+      color: $gradient-pink-start;
 
       &:hover {
-        color: $gradient-blue-end;
+        color: $gradient-pink-end;
       }
     }
   }
@@ -342,20 +359,20 @@
   z-index: 1000;
 
   .signup-modal-content {
-    background-color: white;
-    border-radius: 12px;
+    background-color: $bg-warm-taupe;
+    border-radius: $border-radius-large;
     width: 90%;
     max-width: 400px;
     padding: 2rem;
     position: relative;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    box-shadow: $shadow-large;
 
     h3 {
       margin-top: 0;
       margin-bottom: 1.5rem;
       font-size: 1.4rem;
       text-align: center;
-      color: #333;
+      color: $color-text-primary;
     }
 
     .close-button {
@@ -365,20 +382,20 @@
       background: none;
       border: none;
       font-size: 1.5rem;
-      color: #666;
+      color: $color-description-text;
       cursor: pointer;
       line-height: 1;
       padding: 0;
 
       &:hover {
-        color: #333;
+        color: $color-text-primary;
       }
     }
 
     .signup-message {
       margin-top: 1.25rem;
       text-align: center;
-      color: #666;
+      color: $color-description-text;
       font-size: 0.875rem;
     }
 

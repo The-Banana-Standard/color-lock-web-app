@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Refactored `UsageStatsScreen` component with improved data visualization
 - Updated `StatsModal` and `TutorialModal` styling for dark mode consistency
 - Enhanced seed script with more comprehensive test data
+- Refactored auth component styles to use SCSS variables and design tokens for consistency
 
 ### Removed
 

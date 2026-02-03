@@ -896,12 +896,12 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: $color-secondary;
-  color: $color-text-primary;
+  background-color: $bg-warm-taupe;
+  color: $color-primary-gray;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  border: 1px solid $color-primary-gray;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.2s ease;
   z-index: 10;
@@ -913,7 +913,7 @@
   right: 15px;
 }
 .home-button:hover {
-  background-color: $color-secondary-dark;
+  background-color: rgba($color-primary-gray, 0.1);
 }
 
 .settings-button {
@@ -921,7 +921,7 @@
   right: 15px;
 }
 .settings-button:hover {
-  background-color: $color-secondary-dark;
+  background-color: rgba($color-primary-gray, 0.1);
   transform: rotate(30deg);
 }
 
@@ -930,7 +930,7 @@
   right: 15px;
 }
 .stats-button:hover {
-  background-color: $color-secondary-dark;
+  background-color: rgba($color-primary-gray, 0.1);
 }
 
 .info-button {
@@ -938,7 +938,7 @@
   right: 15px;
 }
 .info-button:hover {
-  background-color: $color-secondary-dark;
+  background-color: rgba($color-primary-gray, 0.1);
 }
 
 // --- Desktop SignUp Button (Absolute Positioning) ---
@@ -963,12 +963,16 @@
 
 .hamburger-button {
   @include icon-button;
-  width: 40px;
-  height: 40px;
-  font-size: $font-size-large;
-  background-color: $color-secondary;
-  color: $color-text-primary;
-  z-index: $z-index-modal + 2; // Above menu content
+
+  // Wrap overrides in & {} to comply with Sass mixed-decls rule
+  & {
+    width: 40px;
+    height: 40px;
+    font-size: $font-size-large;
+    background-color: $color-secondary;
+    color: $color-text-primary;
+    z-index: $z-index-modal + 2; // Above menu content
+  }
 }
 
 .hamburger-menu-content {
@@ -1076,19 +1080,19 @@
   margin-left: auto;
   margin-right: auto;
   background-color: $color-secondary;
-  color: $bg-warm-taupe;
+  color: $color-primary-gray;
   padding: $spacing-md $spacing-lg;
   border-radius: $border-radius-large;
-  box-shadow: 0 2px 10px rgba($bg-warm-taupe, 0.3);
+  box-shadow: 0 2px 10px rgba($bg-dark-mode, 0.3);
   // Use flexbox to manage internal content alignment
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 150px; // Ensure card has enough height for positioning hamburger
 
-  // Force all text elements to use $bg-warm-taupe
+  // Force all text elements to use $color-primary-gray
   h1, h2, h3, p, span, label, div {
-    color: $bg-warm-taupe;
+    color: $color-primary-gray;
   }
 
   // Wrapper for the actual content to allow centering while hamburger is absolute
@@ -1159,28 +1163,20 @@
 
 // --- Icon Buttons ---
 .icon-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: $bg-dark-mode;
-  color: $color-text-primary;
-  border: 1px solid $bg-warm-taupe;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: $shadow-medium;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background-color: rgba($bg-warm-taupe, 0.2);
+  @include icon-button;
+
+  // Wrap overrides in & {} to comply with Sass mixed-decls rule
+  & {
+    width: 40px;
+    height: 40px;
+    box-shadow: none;
   }
-  
+
   // Special hover for settings icon
   &:has(svg[data-icon="gear"]):hover {
     transform: rotate(30deg);
   }
-  
+
   // Hide on mobile screens
   @media (max-width: 779px) {
     display: none;
