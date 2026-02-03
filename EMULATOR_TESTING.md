@@ -31,7 +31,7 @@ That's it! Your app is now running against local emulators with test data.
 | Service       | URL                          |
 |---------------|------------------------------|
 | Emulator UI   | http://localhost:4000        |
-| Firestore     | http://localhost:8080        |
+| Firestore     | http://localhost:8081        |
 | Auth          | http://localhost:9099        |
 | Functions     | http://localhost:5001        |
 

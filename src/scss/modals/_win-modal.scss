@@ -76,6 +76,29 @@
   // Firefox scrollbar styling
   scrollbar-width: thin;
   scrollbar-color: rgba(84, 160, 255, 0.5) rgba(0, 0, 0, 0.05);
+
+  @include dark-mode {
+    // Dark mode: dark base with subtle rainbow gradient overlay
+    background: linear-gradient(
+      135deg,
+      rgba(255, 107, 107, 0.2) 0%,
+      rgba(255, 159, 67, 0.2) 17%,
+      rgba(254, 202, 87, 0.2) 33%,
+      rgba(46, 213, 115, 0.2) 50%,
+      rgba(84, 160, 255, 0.2) 67%,
+      rgba(165, 94, 234, 0.2) 83%,
+      rgba(255, 107, 129, 0.2) 100%
+    ),
+    $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+
+    &::-webkit-scrollbar-track {
+      background: rgba($color-light-taupe, 0.1);
+    }
+
+    // Firefox scrollbar styling for dark mode
+    scrollbar-color: rgba(84, 160, 255, 0.5) rgba($color-light-taupe, 0.1);
+  }
 }
 
 // Win modal animation
@@ -108,6 +131,10 @@
   margin: 0 0 $spacing-sm 0;
   text-transform: uppercase;
   letter-spacing: 1px;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 // Score Comparison - Two row layout
@@ -187,6 +214,15 @@
       text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
     }
   }
+
+  @include dark-mode {
+    // Use taupe background variable for shadows in dark mode
+    box-shadow: 0 4px 12px rgba($bg-dark-mode, 0.5);
+
+    &.gold {
+      box-shadow: 0 4px 16px rgba(255, 193, 7, 0.3);
+    }
+  }
 }
 
 // Label above the tile
@@ -209,6 +245,10 @@
     text-transform: uppercase;
     letter-spacing: 1px;
   }
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 
@@ -219,6 +259,10 @@
   color: $color-text-primary;
   text-align: center;
   line-height: 1.3;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 // Streaks Section - 2 cards side by side
@@ -255,6 +299,19 @@
   .streak-label {
     font-size: $font-size-small;
     color: $color-text-secondary;
+  }
+
+  @include dark-mode {
+    background: rgba($bg-dark-elevated, 0.8);
+    box-shadow: 0 2px 8px rgba($bg-dark-mode, 0.3);
+
+    .streak-value {
+      color: $gradient-blue-start;
+    }
+
+    .streak-label {
+      color: color.adjust($color-light-taupe, $lightness: -15%);
+    }
   }
 }
 
@@ -343,6 +400,15 @@
   &:hover {
     background: rgba($color-primary, 0.1);
   }
+
+  @include dark-mode {
+    color: $color-light-taupe;
+    border-color: $color-light-taupe;
+
+    &:hover {
+      background: rgba($color-light-taupe, 0.1);
+    }
+  }
 }
 
 // Next difficulty button (prominent, for low score achievers)
@@ -425,6 +491,16 @@
   &:active {
     transform: translateY(0);
   }
+
+  @include dark-mode {
+    background: $bg-dark-elevated;
+    color: $color-light-taupe;
+    border-color: $color-light-taupe;
+
+    &:hover {
+      background: rgba($color-light-taupe, 0.1);
+    }
+  }
 }
 
 // Secondary links (Close • Share)
@@ -437,6 +513,10 @@
 
 .link-separator {
   color: $color-text-light;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -20%);
+  }
 }
 
 .close-link,
@@ -459,6 +539,14 @@
 
   &:hover {
     color: $color-text-primary;
+  }
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+
+    &:hover {
+      color: $color-light-taupe;
+    }
   }
 }
 
@@ -494,6 +582,10 @@
   margin-top: $spacing-sm;
   padding-top: $spacing-md;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+  @include dark-mode {
+    border-top-color: rgba($color-light-taupe, 0.15);
+  }
 }
 
 // Next puzzle timer section
@@ -504,6 +596,10 @@
     font-size: $font-size-small;
     margin-bottom: $spacing-xs;
     color: $color-text-secondary;
+
+    @include dark-mode {
+      color: color.adjust($color-light-taupe, $lightness: -15%);
+    }
   }
 }
 
@@ -512,6 +608,10 @@
   font-size: $font-size-xl;
   color: $color-primary;
   font-weight: $font-weight-bold;
+
+  @include dark-mode {
+    color: $gradient-blue-start;
+  }
 }
 
 .time-unit {
@@ -532,6 +632,10 @@
     margin: 0 0 $spacing-sm;
     font-size: $font-size-small;
     color: $color-text-secondary;
+
+    @include dark-mode {
+      color: color.adjust($color-light-taupe, $lightness: -15%);
+    }
   }
 
   .app-store-badges {
@@ -590,11 +694,30 @@
   }
 }
 
+// Congratulations/Win title with green gradient (success)
+.congratulations-title {
+  font-family: $font-family-display;
+  font-style: italic;
+  font-size: $font-size-modal-title;
+  margin-top: 0;
+  margin-bottom: $spacing-md;
+  @include gradient-green;
+  @include gradient-text;
+}
+
 // Autocomplete content (kept for other modal)
 .autocomplete-content {
   font-size: $font-size-large;
   margin: 0;
   padding: 5px 0;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+
+    p {
+      color: color.adjust($color-light-taupe, $lightness: -10%);
+    }
+  }
 }
 
 // Legacy classes kept for backwards compatibility
@@ -639,9 +762,17 @@
   font-size: 26px;
   font-weight: $font-weight-bold;
   color: $color-primary;
+
+  @include dark-mode {
+    color: $gradient-blue-start;
+  }
 }
 
 .stat-label {
   font-size: $font-size-small;
   color: $color-text-secondary;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
 }

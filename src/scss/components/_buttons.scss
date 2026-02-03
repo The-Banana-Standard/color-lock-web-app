@@ -8,9 +8,22 @@
 // Main action button
 .primary-button,
 .try-again-button {
-  @include primary-button;
+  @include gradient-button($gradient-green-start, $gradient-green-end);
+  color: $color-light-taupe;
+  border-radius: $border-radius-medium;
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-size-base;
   margin-top: $spacing-md;
   max-width: 200px;
+
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
 // Try again button inside a modal
@@ -59,6 +72,17 @@
     border-color: $gradient-pink-start;
     color: $gradient-pink-start;
   }
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -10%);
+    border-color: color.adjust($color-light-taupe, $lightness: -10%);
+
+    &:hover {
+      background-color: rgba($gradient-pink-start, 0.15);
+      border-color: $gradient-pink-start;
+      color: $gradient-pink-start;
+    }
+  }
 }
 
 // Cancel button
@@ -79,6 +103,16 @@
   &:hover {
     background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
   }
+
+  @include dark-mode {
+    background: $bg-dark-elevated;
+    color: $color-light-taupe;
+    border-color: rgba($color-light-taupe, 0.3);
+
+    &:hover {
+      background-color: color.adjust($bg-dark-elevated, $lightness: 5%);
+    }
+  }
 }
 
 // Inverse share button
@@ -94,6 +128,15 @@
 
   &:hover {
     background-color: rgba($gradient-share-start, 0.1);
+  }
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-small;
+
+    &:hover {
+      background-color: rgba($gradient-share-start, 0.15);
+    }
   }
 }
 
@@ -142,57 +185,58 @@
   top: 165px;
 }
 
-// Gradient icon button variants (taupe background with colored icons)
-.icon-button--coral {
-  background-color: $bg-warm-taupe;
+// Dark mode styles for icon buttons
+@include dark-mode {
+  .settings-button,
+  .stats-button,
+  .info-button,
+  .home-button {
+    background-color: $bg-dark-mode;
+    border: 1px solid $color-light-taupe;
+    box-shadow: none;
 
-  svg {
-    color: $gradient-coral-start;
-    fill: $gradient-coral-start;
+    &:hover {
+      background-color: color.adjust($bg-dark-mode, $lightness: 10%);
+    }
   }
+}
+
+// Gradient icon button variants (taupe background with colored icons)
+// Base styles shared by all color variants
+%icon-button-base {
+  background-color: $bg-warm-taupe;
 
   &:hover {
     background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
   }
+
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+
+    &:hover {
+      background-color: color.adjust($bg-dark-mode, $lightness: 10%);
+    }
+  }
+}
+
+.icon-button--coral {
+  @extend %icon-button-base;
+  svg { color: $gradient-coral-start; fill: $gradient-coral-start; }
 }
 
 .icon-button--blue {
-  background-color: $bg-warm-taupe;
-
-  svg {
-    color: $gradient-blue-start;
-    fill: $gradient-blue-start;
-  }
-
-  &:hover {
-    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
-  }
+  @extend %icon-button-base;
+  svg { color: $gradient-blue-start; fill: $gradient-blue-start; }
 }
 
 .icon-button--green {
-  background-color: $bg-warm-taupe;
-
-  svg {
-    color: $gradient-green-start;
-    fill: $gradient-green-start;
-  }
-
-  &:hover {
-    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
-  }
+  @extend %icon-button-base;
+  svg { color: $gradient-green-start; fill: $gradient-green-start; }
 }
 
 .icon-button--pink {
-  background-color: $bg-warm-taupe;
-
-  svg {
-    color: $gradient-pink-start;
-    fill: $gradient-pink-start;
-  }
-
-  &:hover {
-    background-color: color.adjust($bg-warm-taupe, $lightness: -5%);
-  }
+  @extend %icon-button-base;
+  svg { color: $gradient-pink-start; fill: $gradient-pink-start; }
 }
 
 // ===========================================
@@ -247,6 +291,15 @@
     background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
     color: white;
   }
+
+  @include dark-mode {
+    background-color: color.adjust($bg-dark-elevated, $lightness: 5%);
+    box-shadow: $shadow-dark-small;
+
+    &:hover {
+      background-color: color.adjust($bg-dark-elevated, $lightness: 10%);
+    }
+  }
 }
 
 // ===========================================
@@ -274,6 +327,16 @@
     background-color: rgba($gradient-pink-start, 0.2);
     color: $gradient-pink-start;
     transform: scale(1.05);
+  }
+
+  @include dark-mode {
+    background-color: rgba($color-light-taupe, 0.1);
+    color: $color-light-taupe;
+
+    &:hover {
+      background-color: rgba($gradient-pink-start, 0.2);
+      color: $gradient-pink-start;
+    }
   }
 }
 

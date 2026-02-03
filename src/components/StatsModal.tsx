@@ -1,12 +1,10 @@
-import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import '../scss/main.scss';
-import { TileColor } from '../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark, faShareNodes, faCopy, faEnvelope, faShare, faChevronDown } from '@fortawesome/free-solid-svg-icons';
-import { faTwitter, faFacebookF } from '@fortawesome/free-brands-svg-icons';
-import { GameStatistics, defaultStats, LeaderboardEntry } from '../types/stats';
+import { faXmark, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { GameStatistics, defaultStats } from '../types/stats';
 import { dateKeyForToday } from '../utils/dateUtils';
-import { getGlobalLeaderboardCallable, getPersonalStatsCallable, getGlobalLeaderboardV2Callable } from '../services/firebaseService';
+import { getPersonalStatsCallable, getGlobalLeaderboardV2Callable } from '../services/firebaseService';
 import { useDataCache } from '../contexts/DataCacheContext';
 import { useAuth } from '../contexts/AuthContext';
 import useSettings from '../hooks/useSettings';
@@ -28,9 +26,6 @@ interface StatsModalProps {
   isLoading?: boolean;
   initialTab?: 'personal' | 'global';
 }
-
-// Define the type for sorting state
-type SortConfig = { key: keyof LeaderboardEntry; direction: 'asc' | 'desc' } | null;
 
 // Use React.memo to wrap the component
 const StatsModal: React.FC<StatsModalProps> = memo(({ 
@@ -91,21 +86,17 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
       setPersonalStatsError(null);
       
       try {
-        console.log("[StatsModal] Fetching personal stats for:", todayKey, "difficulty:", settings.difficultyLevel);
-        const result = await getPersonalStatsCallable({ 
-          puzzleId: todayKey, 
-          difficulty: settings.difficultyLevel 
+        const result = await getPersonalStatsCallable({
+          puzzleId: todayKey,
+          difficulty: settings.difficultyLevel
         });
-        
-        console.log("[StatsModal] Personal stats result:", result);
-        
+
         if (result.data.success && result.data.stats) {
           setPersonalStats(result.data.stats);
         } else {
           throw new Error(result.data.error || 'Failed to fetch personal stats');
         }
       } catch (error: any) {
-        console.error("[StatsModal] Error fetching personal stats:", error);
         setPersonalStatsError(error.message || 'Could not load personal stats.');
       } finally {
         setIsLoadingNewPersonalStats(false);
@@ -129,22 +120,14 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
       setLeaderboardV2Error(null);
       
       try {
-        console.log("[StatsModal] Fetching leaderboard V2:", { 
-          category: leaderboardCategory, 
-          subcategory: leaderboardSubcategory, 
-          difficulty: leaderboardDifficulty 
-        });
-        
         const result = await getGlobalLeaderboardV2Callable({
           category: leaderboardCategory,
           subcategory: leaderboardSubcategory,
-          difficulty: (leaderboardCategory === 'goals' || leaderboardCategory === 'streaks') 
-            ? leaderboardDifficulty 
+          difficulty: (leaderboardCategory === 'goals' || leaderboardCategory === 'streaks')
+            ? leaderboardDifficulty
             : undefined
         });
-        
-        console.log("[StatsModal] Leaderboard V2 result:", result);
-        
+
         if (result.data.success && result.data.leaderboard) {
           setLeaderboardV2Data(result.data.leaderboard);
           setRequesterEntry(result.data.requesterEntry || null);
@@ -152,7 +135,6 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
           throw new Error(result.data.error || 'Failed to fetch leaderboard');
         }
       } catch (error: any) {
-        console.error("[StatsModal] Error fetching leaderboard V2:", error);
         setLeaderboardV2Error(error.message || 'Could not load leaderboard data.');
       } finally {
         setIsLoadingLeaderboardV2(false);
@@ -168,39 +150,7 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
       onClose();
     }
   }, [onClose]);
-  
-  // Helper to safely display values, using defaultStats as fallback
-  const safelyDisplay = useCallback((value: any, type: 'number' | 'arrayLength' | 'mapKeys' | 'bestScoreToday' | 'attemptsToday' = 'number'): string | number => {
-    try {
-      if (type === 'bestScoreToday') {
-        const score = currentStats?.bestScoresByDay?.[todayKey];
-        return score !== null && score !== undefined && !isNaN(Number(score)) ? Number(score) : 'N/A';
-      }
-      if (type === 'attemptsToday') {
-        const attemptsAchieve = currentStats?.attemptsToAchieveBotScore?.[todayKey];
-        const attemptsBeat = currentStats?.attemptsToBeatBotScore?.[todayKey];
-        const attemptsWin = currentStats?.attemptsToWinByDay?.[todayKey]; // Get win attempts
-        // Determine which attempt value to show based on context (this might need refinement)
-        const attempts = value; // Assuming `value` holds the relevant attempts data for the item
-        return attempts !== null && attempts !== undefined && !isNaN(Number(attempts)) ? Number(attempts) : 'N/A';
-      }
-      if (type === 'number') {
-        const num = Number(value);
-        return !isNaN(num) ? num : 0;
-      }
-      if (type === 'arrayLength') {
-        return Array.isArray(value) ? value.length : 0;
-      }
-      if (type === 'mapKeys') {
-        return (typeof value === 'object' && value !== null) ? Object.keys(value).length : 0;
-      }
-    } catch (e) {
-      console.error("Error displaying stat:", e, { value, type });
-      return (type === 'bestScoreToday' || type === 'attemptsToday') ? 'N/A' : 0;
-    }
-    return String(value ?? ((type === 'bestScoreToday' || type === 'attemptsToday') ? 'N/A' : 0));
-  }, [currentStats, todayKey]);
-  
+
   // Helper functions for leaderboard V2
   const getSubcategoryOptions = useCallback((category: 'score' | 'goals' | 'streaks') => {
     switch (category) {
@@ -326,9 +276,6 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
 
   if (!isOpen) return null;
 
-  // Use combined loading state for personal stats tab
-  const showPersonalStatsLoader = isLoadingPersonalStats || cacheLoadingStates.userStats;
-
   return (
     <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content stats-modal stats-modal-large">
@@ -337,7 +284,7 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
         </button>
         
         <div className="modal-header">
-          <h2 className="modal-title">Statistics</h2>
+          <h2 className="stats-modal-title">Statistics</h2>
         </div>
         
         {/* Tabs */} 

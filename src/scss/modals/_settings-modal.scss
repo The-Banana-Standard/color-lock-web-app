@@ -1,4 +1,5 @@
 @use '../abstracts' as *;
+@use 'sass:color';
 
 // Settings Modal
 .settings-modal {
@@ -11,6 +12,11 @@
   overflow-y: auto;
   @include flex-column;
   box-shadow: $shadow-xl;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+  }
 }
 
 .settings-header {
@@ -19,11 +25,20 @@
   margin-bottom: $spacing-lg;
   padding-bottom: $spacing-sm;
   border-bottom: 1px solid #eee;
-  
+
   h2 {
     margin: 0;
     font-size: $font-size-larger;
     font-weight: $font-weight-bold;
+    font-family: $font-family-display;
+    font-style: italic;
+    // Blue gradient for settings (⚙️)
+    @include gradient-blue;
+    @include gradient-text;
+  }
+
+  @include dark-mode {
+    border-bottom-color: rgba($color-light-taupe, 0.2);
   }
 }
 
@@ -40,12 +55,16 @@
 
 .settings-section {
   margin-bottom: $spacing-lg;
-  
+
   h3 {
     font-size: $font-size-large;
     margin-bottom: $spacing-sm;
     font-weight: $font-weight-bold;
     color: $color-text-primary;
+
+    @include dark-mode {
+      color: $color-light-taupe;
+    }
   }
 }
 
@@ -55,11 +74,19 @@
   margin-bottom: $spacing-md;
   padding-bottom: $spacing-md;
   border-bottom: 1px solid #f5f5f5;
-  
+
   label {
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     color: $color-text-primary;
+  }
+
+  @include dark-mode {
+    border-bottom-color: rgba($color-light-taupe, 0.15);
+
+    label {
+      color: $color-light-taupe;
+    }
   }
 }
 
@@ -68,6 +95,10 @@
   font-size: $font-size-small;
   color: $color-text-secondary;
   font-weight: $font-weight-normal;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
 }
 
 .settings-footer {
@@ -75,6 +106,10 @@
   border-top: 1px solid #eee;
   display: flex;
   justify-content: flex-end;
+
+  @include dark-mode {
+    border-top-color: rgba($color-light-taupe, 0.2);
+  }
 }
 
 .settings-save-button {
@@ -97,10 +132,14 @@
   align-items: center;
   cursor: pointer;
   font-weight: $font-weight-normal !important;
-  
+
   input[type="radio"] {
     margin-right: $spacing-xs;
     cursor: pointer;
+  }
+
+  @include dark-mode {
+    color: $color-light-taupe;
   }
 }
 
@@ -129,6 +168,11 @@
   position: relative;
   height: 36px;
   box-shadow: $shadow-small;
+
+  @include dark-mode {
+    border-color: $color-light-taupe;
+    box-shadow: $shadow-dark-small;
+  }
 }
 
 .difficulty-segment {
@@ -146,23 +190,45 @@
   align-items: center;
   justify-content: center;
   z-index: 2;
-  
+
   &.active {
     background-color: $color-primary;
     color: $color-white;
     font-weight: $font-weight-bold;
   }
-  
+
   &:not(:last-child) {
     border-right: 1px solid rgba($color-primary, 0.2);
   }
-  
+
   &:hover:not(.active) {
     background-color: $color-gray-lighter;
   }
-  
+
   &:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba($color-primary, 0.3);
+  }
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    color: $color-light-taupe;
+
+    &.active {
+      background-color: $color-light-taupe;
+      color: $bg-dark-mode;
+    }
+
+    &:not(:last-child) {
+      border-right-color: rgba($color-light-taupe, 0.2);
+    }
+
+    &:hover:not(.active) {
+      background-color: color.adjust($bg-dark-elevated, $lightness: 5%);
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 2px rgba($color-light-taupe, 0.3);
+    }
   }
 } 

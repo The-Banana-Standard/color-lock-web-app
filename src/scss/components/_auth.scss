@@ -10,6 +10,10 @@
   min-height: 100vh;
   padding: 1rem;
   background-color: #f8f9fa;
+
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+  }
 }
 
 // Auth Card
@@ -20,6 +24,11 @@
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   overflow: hidden;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+  }
 }
 
 // Auth Header
@@ -56,6 +65,10 @@
     margin-top: 0;
     margin-bottom: 1rem;
     text-align: center;
+
+    @include dark-mode {
+      color: $color-light-taupe;
+    }
   }
 }
 
@@ -65,13 +78,17 @@
   text-align: center;
   margin-bottom: 1.5rem;
   line-height: 1.4;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
 }
 
 .forgot-password-link {
   text-align: right;
   margin-bottom: 1rem;
   margin-top: -0.5rem;
-  
+
   .toggle-button {
     background: none;
     border: none;
@@ -80,22 +97,34 @@
     cursor: pointer;
     padding: 0;
     text-decoration: none;
-    
+
     &:hover {
       text-decoration: underline;
       color: color.scale(#4a90e2, $lightness: -10%);
+    }
+
+    @include dark-mode {
+      color: $gradient-blue-start;
+
+      &:hover {
+        color: $gradient-blue-end;
+      }
     }
   }
 }
 
 .form-group {
   margin-bottom: 1.25rem;
-  
+
   label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
     color: #555;
+
+    @include dark-mode {
+      color: $color-light-taupe;
+    }
   }
 }
 
@@ -106,11 +135,26 @@
   border: 1px solid #ddd;
   border-radius: 6px;
   transition: border-color 0.2s, box-shadow 0.2s;
-  
+
   &:focus {
     border-color: #4a90e2;
     box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
     outline: none;
+  }
+
+  @include dark-mode {
+    background-color: color.adjust($bg-dark-elevated, $lightness: 5%);
+    border-color: rgba($color-light-taupe, 0.3);
+    color: $color-light-taupe;
+
+    &::placeholder {
+      color: color.adjust($color-light-taupe, $lightness: -25%);
+    }
+
+    &:focus {
+      border-color: $gradient-blue-start;
+      box-shadow: 0 0 0 2px rgba($gradient-blue-start, 0.3);
+    }
   }
 }
 
@@ -126,28 +170,38 @@
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
-  
+
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
   }
-  
+
   &.primary-button {
     background-color: #4a90e2;
     color: white;
-    
+
     &:hover:not(:disabled) {
       background-color: color.scale(#4a90e2, $lightness: -10%);
     }
   }
-  
+
   &.guest-button {
     background-color: white;
     color: #4a90e2;
     border: 1px solid #4a90e2;
-    
+
     &:hover:not(:disabled) {
       background-color: rgba(74, 144, 226, 0.1);
+    }
+
+    @include dark-mode {
+      background-color: $bg-dark-elevated;
+      color: $gradient-blue-start;
+      border-color: $gradient-blue-start;
+
+      &:hover:not(:disabled) {
+        background-color: rgba($gradient-blue-start, 0.15);
+      }
     }
   }
 }
@@ -157,18 +211,28 @@
   display: flex;
   align-items: center;
   margin: 1.5rem 0;
-  
+
   &::before, &::after {
     content: '';
     flex: 1;
     height: 1px;
     background-color: #ddd;
   }
-  
+
   span {
     padding: 0 1rem;
     color: #777;
     font-size: 0.875rem;
+  }
+
+  @include dark-mode {
+    &::before, &::after {
+      background-color: rgba($color-light-taupe, 0.2);
+    }
+
+    span {
+      color: color.adjust($color-light-taupe, $lightness: -20%);
+    }
   }
 }
 
@@ -176,13 +240,17 @@
 .auth-toggle {
   margin-top: 1.5rem;
   text-align: center;
-  
+
   p {
     color: #666;
     font-size: 0.9rem;
     margin: 0;
+
+    @include dark-mode {
+      color: color.adjust($color-light-taupe, $lightness: -15%);
+    }
   }
-  
+
   .toggle-button {
     background: none;
     border: none;
@@ -192,9 +260,17 @@
     padding: 0;
     font-size: 0.9rem;
     text-decoration: underline;
-    
+
     &:hover {
       color: color.scale(#4a90e2, $lightness: -10%);
+    }
+
+    @include dark-mode {
+      color: $gradient-blue-start;
+
+      &:hover {
+        color: $gradient-blue-end;
+      }
     }
   }
 }
@@ -240,6 +316,16 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
+
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+    color: $color-light-taupe;
+    border-color: $color-light-taupe;
+
+    &:hover {
+      background-color: color.adjust($bg-dark-mode, $lightness: 10%);
+    }
+  }
 }
 
 // Sign Up Modal
@@ -254,7 +340,7 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  
+
   .signup-modal-content {
     background-color: white;
     border-radius: 12px;
@@ -263,7 +349,7 @@
     padding: 2rem;
     position: relative;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    
+
     h3 {
       margin-top: 0;
       margin-bottom: 1.5rem;
@@ -271,7 +357,7 @@
       text-align: center;
       color: #333;
     }
-    
+
     .close-button {
       position: absolute;
       top: 1rem;
@@ -283,17 +369,38 @@
       cursor: pointer;
       line-height: 1;
       padding: 0;
-      
+
       &:hover {
         color: #333;
       }
     }
-    
+
     .signup-message {
       margin-top: 1.25rem;
       text-align: center;
       color: #666;
       font-size: 0.875rem;
+    }
+
+    @include dark-mode {
+      background-color: $bg-dark-elevated;
+      box-shadow: $shadow-dark-large;
+
+      h3 {
+        color: $color-light-taupe;
+      }
+
+      .close-button {
+        color: color.adjust($color-light-taupe, $lightness: -15%);
+
+        &:hover {
+          color: $color-light-taupe;
+        }
+      }
+
+      .signup-message {
+        color: color.adjust($color-light-taupe, $lightness: -15%);
+      }
     }
   }
 } 

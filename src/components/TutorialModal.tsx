@@ -3,8 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useTutorialContext, TutorialStep } from '../contexts/TutorialContext';
 import { useModalClickOutside } from '../utils/modalUtils';
-import { debugLog, LogLevel } from '../utils/debugUtils';
-import { TileColor } from '../types';
 
 /**
  * Props for the TutorialModal component
@@ -24,30 +22,16 @@ interface TutorialModalProps {
  * @returns React nodes with colored spans for color names
  */
 const colorizeText = (text: string): string => {
-  // Define color mappings (color name to CSS color)
-  const colorMap: Record<string, string> = {
-    'red': '#e74c3c',
-    'orange': '#e67e22',
-    'yellow': '#f1c40f',
-    'green': '#2ecc71',
-    'blue': '#3498db',
-    'purple': '#9b59b6',
-    'white': '#ffffff',
-    'black': '#000000'
-  };
-  
+  // Define color names to match
+  const colorNames = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'white', 'black'];
+
   // Case-insensitive regex to match color names with word boundaries
-  const colorPattern = `\\b(${Object.keys(colorMap).join('|')})\\b`;
-  
-  // Replace color names with styled spans
+  const colorPattern = `\\b(${colorNames.join('|')})\\b`;
+
+  // Replace color names with styled spans using CSS classes
   return text.replace(new RegExp(colorPattern, 'gi'), (match) => {
     const colorName = match.toLowerCase();
-    const color = colorMap[colorName];
-    const textShadow = color === '#f1c40f' || color === '#ffffff' 
-      ? '0.5px 0.5px 1px rgba(0,0,0,0.5)' 
-      : 'none';
-    
-    return `<span style="color: ${color}; font-weight: bold; text-shadow: ${textShadow}">${match}</span>`;
+    return `<span class="tutorial-color-text tutorial-color-${colorName}">${match}</span>`;
   });
 };
 
@@ -118,13 +102,6 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose, type = '
     
     // Handle continue button click
     const handleContinueClick = () => {
-      debugLog('tutorialModal', `Continue button clicked for step ${TutorialStep[currentStep]}`, {
-        step: currentStep,
-        stepName: TutorialStep[currentStep],
-        showColorPicker
-      });
-      
-      // If we're on the winning completion step, end the tutorial
       if (currentStep === TutorialStep.WINNING_COMPLETION) {
         endTutorial();
       } else {
@@ -173,7 +150,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose, type = '
           <FontAwesomeIcon icon={faTimes} />
         </button>
         <div className="modal-body">
-          <h2>Color Lock Tutorial</h2>
+          <h2 className="tutorial-modal-title">Color Lock Tutorial</h2>
           <p>Would you like to see the Color Lock Tutorial?</p>
           <p className="tutorial-steps-info">This tutorial will take you through an example game</p>
           <div className="modal-buttons">

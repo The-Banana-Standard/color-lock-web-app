@@ -1,37 +1,19 @@
-import { 
-  connectAuthEmulator, 
-  signInAnonymously, 
-  User, 
-  getIdToken,
-  onAuthStateChanged
-} from 'firebase/auth';
-import {
-  connectFirestoreEmulator,
-  doc,
-  getDoc
-} from 'firebase/firestore';
-import { 
-  connectFunctionsEmulator, 
-  httpsCallable 
-} from 'firebase/functions';
-import { 
-  logEvent 
-} from 'firebase/analytics';
+import { connectAuthEmulator } from 'firebase/auth';
+import { connectFirestoreEmulator, doc, getDoc } from 'firebase/firestore';
+import { connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 
 // Import Firebase services from centralized config
-import { 
+import {
   firebaseApp,
-  firebaseAuth, 
-  firebaseFirestore, 
-  firebaseFunctions, 
-  firebaseAnalytics,
+  firebaseAuth,
+  firebaseFirestore,
+  firebaseFunctions,
   firebaseAppCheck,
   useEmulators
 } from '../env/firebaseConfig';
 
 // Import types
 import { FirestorePuzzleData } from '../types';
-import { GameStatistics } from '../types/stats';
 
 // Connect to emulators if in development
 if (useEmulators && firebaseAuth && firebaseFirestore && firebaseFunctions) {
@@ -40,8 +22,8 @@ if (useEmulators && firebaseAuth && firebaseFirestore && firebaseFunctions) {
     connectAuthEmulator(firebaseAuth, "http://127.0.0.1:9099", { disableWarnings: true });
     console.log("[FirebaseService] Connected to Auth emulator (127.0.0.1:9099)");
 
-    connectFirestoreEmulator(firebaseFirestore, "localhost", 8080);
-    console.log("[FirebaseService] Connected to Firestore emulator (localhost:8080)");
+    connectFirestoreEmulator(firebaseFirestore, "localhost", 8081);
+    console.log("[FirebaseService] Connected to Firestore emulator (localhost:8081)");
 
     console.log("[FirebaseService] Connecting to Functions emulator...");
     try {
@@ -56,13 +38,12 @@ if (useEmulators && firebaseAuth && firebaseFirestore && firebaseFunctions) {
 }
 
 // Export the services for use throughout the application
-export { 
-  firebaseAuth as auth, 
-  firebaseFirestore as db, 
-  firebaseFunctions as functions, 
-  firebaseAnalytics as analytics,
+export {
+  firebaseAuth as auth,
+  firebaseFirestore as db,
+  firebaseFunctions as functions,
   firebaseAppCheck as appCheck,
-  useEmulators 
+  useEmulators
 };
 
 // Helper function for callables
@@ -177,6 +158,11 @@ export interface UsageStatsEntry {
   uniqueUsers: number;
   totalAttempts: number;
   userIds?: string[]; // Optional: array of user IDs for proper monthly aggregation
+  // Streak counts (users with 3+ day streaks ending on this day)
+  puzzleStreak3PlusCount?: number;
+  easyGoalStreak3PlusCount?: number;
+  mediumGoalStreak3PlusCount?: number;
+  hardGoalStreak3PlusCount?: number;
 }
 
 export interface GetUsageStatsResponse {
@@ -185,6 +171,11 @@ export interface GetUsageStatsResponse {
   count?: number;
   totalUniqueUsers?: number;
   totalAttempts?: number;
+  // Aggregate streak sums across the entire date range
+  puzzleStreak3PlusSum?: number;
+  easyGoalStreak3PlusSum?: number;
+  mediumGoalStreak3PlusSum?: number;
+  hardGoalStreak3PlusSum?: number;
   error?: string;
 }
 

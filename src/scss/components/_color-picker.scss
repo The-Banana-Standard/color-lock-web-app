@@ -1,11 +1,12 @@
 @use '../abstracts' as *;
+@use 'sass:color';
 
 // Bottom-sheet color picker modal
 .color-picker-modal-backdrop {
   position: fixed;
-  top: 0; 
-  left: 0; 
-  right: 0; 
+  top: 0;
+  left: 0;
+  right: 0;
   bottom: 0;
   background-color: $color-overlay-light;
   display: flex;
@@ -25,19 +26,28 @@
   margin-bottom: 50px;
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
+
+  @include dark-mode {
+    background: rgba($bg-dark-elevated, 0.95);
+    box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.3);
+  }
 }
 
 .color-picker-header {
   @include flex-between;
   align-items: center;
   margin-bottom: $spacing-xs;
-  
+
   h3 {
     text-align: left;
     margin: 0;
     font-size: $font-size-small;
     font-weight: $font-weight-medium;
     color: $color-text-light;
+
+    @include dark-mode {
+      color: $color-light-taupe;
+    }
   }
 }
 
@@ -46,6 +56,10 @@
   margin: 0;
   padding: $spacing-xxs;
   color: $color-text-light;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .color-bubbles {
@@ -71,11 +85,11 @@
   transition: transform $transition-fast;
   box-sizing: border-box;
   box-shadow: $shadow-small;
-  
+
   &:hover {
     transform: scale(1.05);
   }
-  
+
   // Style for the current color
   &.current-color {
     position: relative;
@@ -83,20 +97,28 @@
     cursor: not-allowed;
     box-shadow: none;
     border: 2px dashed rgba(0, 0, 0, 0.3);
-    
+
     &:hover {
       transform: none;
     }
   }
-  
+
   // Highlight currently changing color
   &.currently-changing {
     box-shadow: 0 0 12px 4px rgba(0, 191, 255, 0.6);
   }
-  
+
   // High contrast mode
   .high-contrast-mode & {
     border: 2px solid $color-black;
+  }
+
+  @include dark-mode {
+    box-shadow: 0 2px 4px rgba($bg-dark-mode, 0.5);
+
+    &.current-color {
+      border-color: rgba($color-light-taupe, 0.4);
+    }
   }
 }
 
@@ -110,6 +132,11 @@
   font-size: 20px;
   opacity: 0.8;
   filter: drop-shadow(0 0 1px white);
+
+  @include dark-mode {
+    color: $color-light-taupe;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+  }
 }
 
 // Color label
@@ -119,4 +146,8 @@
   color: $color-text-light;
   text-transform: capitalize;
   margin-top: $spacing-xxs;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
 } 

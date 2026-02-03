@@ -1,8 +1,14 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
+@use 'sass:color';
 
 .lost-game-modal .modal-content {
   background-color: $color-light-taupe;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+  }
 }
 
 .lost-game-title {
@@ -19,6 +25,10 @@
   color: $color-primary-gray;
   font-size: $font-size-large;
   margin: $spacing-xs 0;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .lost-game-button {
@@ -26,4 +36,8 @@
   border-radius: $border-radius-medium;
   padding: $spacing-sm $spacing-xl;
   box-shadow: $shadow-medium;
+
+  @include dark-mode {
+    box-shadow: $shadow-dark-medium;
+  }
 }

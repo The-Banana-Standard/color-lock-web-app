@@ -55,7 +55,7 @@
           "${workspaceFolder}/functions/lib/**/*.js"
         ],
         "env": {
-          "FIRESTORE_EMULATOR_HOST": "localhost:8080",
+          "FIRESTORE_EMULATOR_HOST": "localhost:8081",
           "FIREBASE_AUTH_EMULATOR_HOST": "localhost:9099",
           "FUNCTIONS_EMULATOR_HOST": "localhost:5001"
         },

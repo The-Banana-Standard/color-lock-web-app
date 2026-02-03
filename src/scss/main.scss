@@ -52,10 +52,19 @@
     margin-top: $spacing-md;
     color: $color-description-text;
   }
-}
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+
+    .spinner {
+      border-color: rgba($color-light-taupe, 0.2);
+      border-left-color: $color-light-taupe;
+    }
+
+    p {
+      color: color.adjust($color-light-taupe, $lightness: -15%);
+    }
+  }
 }
 
 // Board fading animation
@@ -84,6 +93,17 @@
     right: auto;
     left: 15px;
   }
+}
+
+// Tutorial modal title with coral gradient (📚)
+.tutorial-modal-title {
+  font-family: $font-family-display;
+  font-style: italic;
+  font-size: $font-size-xl;
+  margin-top: 0;
+  margin-bottom: $spacing-md;
+  @include gradient-coral;
+  @include gradient-text;
 }
 
 // Tutorial step modal
@@ -149,6 +169,25 @@
       font-size: 1rem;
     }
   }
+
+  @include dark-mode {
+    background-color: rgba($bg-dark-elevated, 0.98);
+    box-shadow: $shadow-dark-large;
+
+    &.tutorial-color-selection-step {
+      background-color: $bg-dark-elevated;
+    }
+
+    .tutorial-step-content {
+      .tutorial-step-title {
+        color: $color-light-taupe;
+      }
+
+      .tutorial-step-message {
+        color: color.adjust($color-light-taupe, $lightness: -15%);
+      }
+    }
+  }
 }
 
 // Animation for the COLOR_SELECTION modal
@@ -170,19 +209,30 @@
   top: 50%;
   bottom: auto;
   transform: translate(-50%, -50%);
-  
+
   // Add specific styles for the algorithm modal
   .color-text {
     font-weight: bold;
     padding: 2px 5px;
     border-radius: 3px;
-    
+
     &.red { background-color: rgba(255, 0, 0, 0.15); color: darkred; }
     &.blue { background-color: rgba(0, 0, 255, 0.15); color: darkblue; }
     &.green { background-color: rgba(0, 128, 0, 0.15); color: darkgreen; }
     &.yellow { background-color: rgba(255, 255, 0, 0.15); color: #707000; }
     &.orange { background-color: rgba(255, 165, 0, 0.15); color: darkorange; }
     &.purple { background-color: rgba(128, 0, 128, 0.15); color: darkmagenta; }
+  }
+
+  @include dark-mode {
+    .color-text {
+      &.red { background-color: rgba(255, 100, 100, 0.25); color: #ff8080; }
+      &.blue { background-color: rgba(100, 150, 255, 0.25); color: #80b0ff; }
+      &.green { background-color: rgba(100, 200, 100, 0.25); color: #80d080; }
+      &.yellow { background-color: rgba(255, 255, 100, 0.25); color: #e0e080; text-shadow: 0 0 2px rgba(0, 0, 0, 0.5); }
+      &.orange { background-color: rgba(255, 180, 100, 0.25); color: #ffb060; }
+      &.purple { background-color: rgba(200, 100, 200, 0.25); color: #d080d0; }
+    }
   }
 }
 
@@ -274,13 +324,11 @@
     }
     
     .try-again-button {
-      @include gradient-button($gradient-blue-start, $gradient-blue-end);
+      @include gradient-button($gradient-green-start, $gradient-green-end);
       color: $color-light-taupe !important;
-      // border: 2px solid #4a90e2 !important;
-      
+
       &:hover {
-        background-color: color.scale(#4a90e2, $lightness: -10%) !important;
-        border-color: color.scale(#4a90e2, $lightness: -10%) !important;
+        opacity: 0.9 !important;
       }
     }
     
@@ -306,6 +354,11 @@
   padding: 2rem 1rem;
   background-color: $bg-warm-taupe;
   color: $color-text-primary;
+
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+    color: $color-light-taupe;
+  }
 }
 
 .landing-header {
@@ -403,6 +456,11 @@
   margin-bottom: 2rem;
   text-align: center;
   box-shadow: $shadow-medium;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-medium;
+  }
 }
 
 .global-stats-container h2 {
@@ -412,6 +470,10 @@
   font-family: $font-family-display;
   font-weight: $font-weight-bolder;
   color: $color-primary-gray;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .global-stats-container .stat-value.average-score {
@@ -420,6 +482,10 @@
   -webkit-text-fill-color: unset;
   background-clip: unset;
   color: $color-primary-gray;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .global-stats-container .stat-value.best-score {
@@ -484,6 +550,15 @@
       color: #d16381;
     }
   }
+
+  @include dark-mode {
+    border-color: rgba($color-light-taupe, 0.2);
+    color: $color-light-taupe;
+
+    &:hover:not(.active) {
+      background-color: rgba($color-light-taupe, 0.05);
+    }
+  }
 }
 
 .stats-grid {
@@ -498,6 +573,11 @@
   border-radius: $border-radius-small;
   padding: 0.8rem;
   box-shadow: $shadow-small;
+
+  @include dark-mode {
+    background-color: color.adjust($bg-dark-elevated, $lightness: 5%);
+    box-shadow: $shadow-dark-small;
+  }
 }
 
 .stat-value {
@@ -514,6 +594,10 @@
 .stat-label {
   font-size: 1.1rem;
   color: $color-description-text;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
 }
 
 .stats-highlight {
@@ -524,6 +608,12 @@
   border-radius: $border-radius-small;
   color: $color-text-primary;
   box-shadow: $shadow-small;
+
+  @include dark-mode {
+    background-color: color.adjust($bg-dark-elevated, $lightness: 5%);
+    color: $color-light-taupe;
+    box-shadow: $shadow-dark-small;
+  }
 }
 
 .landing-stats-button {
@@ -548,6 +638,16 @@
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  @include dark-mode {
+    color: $color-light-taupe;
+    border-color: $color-light-taupe;
+
+    &:hover:not(:disabled) {
+      background-color: $color-light-taupe;
+      color: $bg-dark-mode;
+    }
   }
 }
 
@@ -578,6 +678,10 @@
   width: 250px;
   margin-bottom: 0.75rem;
   background: linear-gradient(135deg, $gradient-blue-start, $gradient-blue-end);
+
+  @include dark-mode {
+    background: linear-gradient(135deg, $gradient-green-start, $gradient-green-end);
+  }
 }
 
 .landing-play-button:hover {
@@ -594,6 +698,10 @@
   text-decoration: underline;
   padding: 0.5rem;
   transition: color $transition-normal $ease-default;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
 }
 
 .landing-signin-link:hover {
@@ -603,6 +711,16 @@
 .landing-guest-button {
   @include secondary-button;
   width: 250px;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    color: $color-light-taupe;
+    border-color: $color-light-taupe;
+
+    &:hover {
+      background-color: color.adjust($bg-dark-elevated, $lightness: 5%);
+    }
+  }
 }
 
 .landing-guest-button:hover {
@@ -621,6 +739,10 @@
   justify-content: center;
   background-color: $bg-warm-taupe;
   z-index: 1000;
+
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+  }
 }
 
 .spinner {
@@ -630,10 +752,11 @@
   border-radius: 50%;
   border-top-color: $color-primary-gray;
   animation: spin 1s ease-in-out infinite;
-}
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  @include dark-mode {
+    border-color: rgba($color-light-taupe, 0.3);
+    border-top-color: $color-light-taupe;
+  }
 }
 
 .app-fade-in-placeholder {
@@ -714,6 +837,11 @@
   width: 90%;
   max-width: 400px;
   position: relative;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+  }
 }
 
 .modal-close {
@@ -734,6 +862,12 @@
   border-radius: $border-radius-circle;
   transition: all $transition-normal $ease-default;
   box-shadow: $shadow-small;
+
+  @include dark-mode {
+    background-color: rgba($color-light-taupe, 0.1);
+    color: $color-light-taupe;
+    box-shadow: $shadow-dark-small;
+  }
 }
 
 .modal-close:hover {
@@ -851,6 +985,11 @@
   flex-direction: column;
   animation: fadeIn $transition-fast ease-out;
   z-index: $z-index-modal + 1; // Below button, above card content potentially
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+  }
 }
 
 .hamburger-menu-item {
@@ -867,21 +1006,37 @@
   gap: 0.5rem;
   width: 100%;
   transition: background-color $transition-normal $ease-default;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .hamburger-menu-item:hover {
   background-color: rgba($color-primary-gray, 0.1);
+
+  @include dark-mode {
+    background-color: rgba($color-light-taupe, 0.1);
+  }
 }
 
 .hamburger-menu-item svg {
   width: 18px;
   color: $color-primary-gray;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 }
 
 .hamburger-menu-item-signup {
   padding: 0.5rem 1rem;
   border-top: 1px solid #eee;
   margin-top: 0.25rem;
+
+  @include dark-mode {
+    border-top-color: rgba($color-light-taupe, 0.2);
+  }
 }
 
 .hamburger-menu-item-signup .signup-button {
@@ -921,14 +1076,20 @@
   margin-left: auto;
   margin-right: auto;
   background-color: $color-secondary;
+  color: $bg-warm-taupe;
   padding: $spacing-md $spacing-lg;
   border-radius: $border-radius-large;
-  box-shadow: $shadow-large;
+  box-shadow: 0 2px 10px rgba($bg-warm-taupe, 0.3);
   // Use flexbox to manage internal content alignment
-  display: flex; 
-  justify-content: center; 
+  display: flex;
+  justify-content: center;
   align-items: center;
   min-height: 150px; // Ensure card has enough height for positioning hamburger
+
+  // Force all text elements to use $bg-warm-taupe
+  h1, h2, h3, p, span, label, div {
+    color: $bg-warm-taupe;
+  }
 
   // Wrapper for the actual content to allow centering while hamburger is absolute
   .top-card-content {
@@ -936,6 +1097,16 @@
     flex-direction: column;
     align-items: center;
     text-align: center; // Ensure text inside is centered
+  }
+
+  @include dark-mode {
+    background-color: $bg-dark-mode;
+    color: $bg-warm-taupe;
+    box-shadow: 0 2px 10px rgba($bg-warm-taupe, 0.2);
+
+    h1, h2, h3, p, span, label, div {
+      color: $bg-warm-taupe;
+    }
   }
 }
 
@@ -991,9 +1162,9 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: $color-secondary;
+  background-color: $bg-dark-mode;
   color: $color-text-primary;
-  border: 1px solid $color-primary-gray;
+  border: 1px solid $bg-warm-taupe;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1002,7 +1173,7 @@
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: $color-secondary-dark;
+    background-color: rgba($bg-warm-taupe, 0.2);
   }
   
   // Special hover for settings icon
@@ -1067,4 +1238,83 @@
   font-size: 1.1rem;
   color: #555;
   font-weight: 500;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
+}
+
+// Tutorial color text styling (for colorizeText function)
+.tutorial-color-text {
+  font-weight: bold;
+}
+
+.tutorial-color-red {
+  color: #e74c3c;
+}
+
+.tutorial-color-orange {
+  color: #e67e22;
+}
+
+.tutorial-color-yellow {
+  color: #f1c40f;
+  text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.5);
+}
+
+.tutorial-color-green {
+  color: #2ecc71;
+}
+
+.tutorial-color-blue {
+  color: #3498db;
+}
+
+.tutorial-color-purple {
+  color: #9b59b6;
+}
+
+.tutorial-color-white {
+  color: #888;
+  text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.3);
+}
+
+.tutorial-color-black {
+  color: #000000;
+}
+
+@include dark-mode {
+  .tutorial-color-red {
+    color: #ff6b6b;
+  }
+
+  .tutorial-color-orange {
+    color: #ffa94d;
+  }
+
+  .tutorial-color-yellow {
+    color: #ffe066;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .tutorial-color-green {
+    color: #69db7c;
+  }
+
+  .tutorial-color-blue {
+    color: #74c0fc;
+  }
+
+  .tutorial-color-purple {
+    color: #da77f2;
+  }
+
+  .tutorial-color-white {
+    color: #dee2e6;
+    text-shadow: none;
+  }
+
+  .tutorial-color-black {
+    color: #868e96;
+  }
 } 
