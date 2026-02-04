@@ -105,6 +105,7 @@ const GameContainer = () => {
     handleBotSolutionConfirm,
     handleCancelAutoSolution,
     isAutoSolving,
+    isCreatingGuestAccount,
     showBotSolutionModal,
     setShowBotSolutionModal,
     navigateToHome,
@@ -325,6 +326,14 @@ const GameContainer = () => {
           {/* Tutorial Highlight for connected tiles */}
           {isTutorialMode && (
             <TutorialHighlight />
+          )}
+
+          {/* Guest auth loading overlay */}
+          {isCreatingGuestAccount && (
+            <div className="guest-auth-loading-overlay" role="status" aria-live="polite">
+              <div className="spinner" aria-hidden="true"></div>
+              <p>Setting up your game...</p>
+            </div>
           )}
         </div>
 
@@ -573,18 +582,20 @@ const App: React.FC = () => {
 };
 
 const AuthenticatedApp: React.FC = () => {
-  const { isAuthenticated, isLoading, currentUser } = useAuth();
+  const { isAuthenticated, isLoading, currentUser, isUnauthenticatedBrowsing } = useAuth();
   const { showLandingPage, currentScreen } = useNavigation();
   const { fetchAndCacheData, isInitialFetchDone } = useDataCache();
   const fetchInitiated = useRef(false);
 
   useEffect(() => {
+    // Fetch data for both authenticated AND unauthenticated users
+    // Public data (puzzles, daily stats, leaderboard) can be fetched without auth
     if (!isLoading && !fetchInitiated.current && !isInitialFetchDone) {
-        console.log("AuthenticatedApp: Auth ready, initiating data fetch...");
+        console.log("AuthenticatedApp: Ready, initiating data fetch...", { isAuthenticated, isUnauthenticatedBrowsing });
         fetchInitiated.current = true;
-        fetchAndCacheData(currentUser);
+        fetchAndCacheData(currentUser); // currentUser may be null for unauthenticated users
     }
-  }, [isLoading, fetchAndCacheData, currentUser, isInitialFetchDone]);
+  }, [isLoading, fetchAndCacheData, currentUser, isInitialFetchDone, isAuthenticated, isUnauthenticatedBrowsing]);
 
   if (isLoading) {
     return (
@@ -601,7 +612,8 @@ const AuthenticatedApp: React.FC = () => {
     return <DeleteAccountPage />;
   }
 
-  if (isAuthenticated) {
+  // Allow game access for both authenticated users AND unauthenticated browsers
+  if (isAuthenticated || isUnauthenticatedBrowsing) {
     // Handle navigation based on currentScreen
     if (currentScreen === 'usageStats') {
       return <UsageStatsScreen />;

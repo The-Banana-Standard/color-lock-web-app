@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback, useRef } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback, useRef, useMemo } from 'react';
 import { TileColor, DailyPuzzle, FirestorePuzzleData, PuzzleGrid } from '../types';
 import { AppSettings, DifficultyLevel } from '../types/settings';
 import { GameStatistics, defaultStats } from '../types/stats';
@@ -21,6 +21,7 @@ import { shouldShowAutocomplete, autoCompletePuzzle } from '../utils/autocomplet
 import { useNavigation } from '../App';
 import { useAuth } from './AuthContext';
 import { useDataCache } from './DataCacheContext'; // Import the cache context hook
+import { debugLog } from '../utils/debugUtils';
 
 // Interface for the context value
 interface GameContextValue {
@@ -60,6 +61,7 @@ interface GameContextValue {
   handleBotSolutionConfirm: () => void;
   handleCancelAutoSolution: () => void;
   isAutoSolving: boolean;
+  isCreatingGuestAccount: boolean;
   showBotSolutionModal: boolean;
   setShowBotSolutionModal: (show: boolean) => void;
   handleSettingsChange: (newSettings: AppSettings) => void;
@@ -96,8 +98,9 @@ interface GameProviderProps {
 // Game provider component
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const DATE_TO_USE = dateKeyForToday();
+  const ERROR_AUTO_DISMISS_MS = 6000;
   const { setShowLandingPage } = useNavigation();
-  const { currentUser } = useAuth();
+  const { currentUser, playAsGuest, isUnauthenticatedBrowsing } = useAuth();
   const {
     puzzleDataV2: cachedPuzzleDataMap,
     userStats: cachedUserStats,
@@ -139,6 +142,21 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [autoSolveIntervalId, setAutoSolveIntervalId] = useState<NodeJS.Timeout | null>(null);
   const autoSolveTimeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
   const [showBotSolutionModal, setShowBotSolutionModal] = useState<boolean>(false);
+  const [pendingMove, setPendingMove] = useState<{ row: number; col: number; color: TileColor } | null>(null);
+  const [isCreatingGuestAccount, setIsCreatingGuestAccount] = useState<boolean>(false);
+  const [guestAuthFailureCount, setGuestAuthFailureCount] = useState<number>(0);
+  const isMountedRef = useRef<boolean>(true);
+  const guestCreationFailedRef = useRef<boolean>(false);
+  const isProcessingPendingMoveRef = useRef<boolean>(false);
+  const errorDismissTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Refs for values that should be read (not trigger) in the pending move useEffect
+  const puzzleRef = useRef(puzzle);
+  const movesThisAttemptRef = useRef(movesThisAttempt);
+  const firestoreDataRef = useRef(firestoreData);
+  const hasDeclinedAutocompleteRef = useRef(hasDeclinedAutocomplete);
+  const isAutoSolvingRef = useRef(isAutoSolving);
+
   const [winModalStats, setWinModalStats] = useState<{
     totalAttempts: number | null;
     currentPuzzleCompletedStreak: number | null;
@@ -152,14 +170,68 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showStatsState, setShowStatsState] = useState(false);
   const { settings, updateSettings } = useSettings();
-  const { 
-    gameStats, 
-    isLoadingStats, 
-    setIsLoadingStats, 
-    loadInitialStats, 
-    generateShareableStats, 
-    setFreshStats 
+  const {
+    gameStats,
+    isLoadingStats,
+    setIsLoadingStats,
+    loadInitialStats,
+    generateShareableStats,
+    setFreshStats
   } = useGameStats(defaultStats);
+
+  // Keep refs in sync with state (for non-trigger dependencies in pending move processing)
+  // Consolidated into a single effect for maintainability - the performance cost of
+  // reassigning all refs on any single dependency change is negligible (just pointer assignments).
+  useEffect(() => {
+    puzzleRef.current = puzzle;
+    movesThisAttemptRef.current = movesThisAttempt;
+    firestoreDataRef.current = firestoreData;
+    hasDeclinedAutocompleteRef.current = hasDeclinedAutocomplete;
+    isAutoSolvingRef.current = isAutoSolving;
+  }, [puzzle, movesThisAttempt, firestoreData, hasDeclinedAutocomplete, isAutoSolving]);
+
+  // Derive a single "auth ready" flag to avoid race conditions between
+  // currentUser being set and isUnauthenticatedBrowsing being flipped.
+  const isAuthReadyForPendingMove = useMemo(() => {
+    return Boolean(currentUser) && !isUnauthenticatedBrowsing && !isCreatingGuestAccount;
+  }, [currentUser, isUnauthenticatedBrowsing, isCreatingGuestAccount]);
+
+  // Track component mount status for cleanup
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  // Helper to set error with optional auto-dismiss
+  const setErrorWithAutoDismiss = useCallback((
+    message: string | null,
+    options: { autoDismiss?: boolean } = {}
+  ) => {
+    if (errorDismissTimeoutRef.current) {
+      clearTimeout(errorDismissTimeoutRef.current);
+      errorDismissTimeoutRef.current = null;
+    }
+
+    setError(message);
+
+    if (message && options.autoDismiss) {
+      errorDismissTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setError(null);
+        }
+        errorDismissTimeoutRef.current = null;
+      }, ERROR_AUTO_DISMISS_MS);
+    }
+  }, []);
+
+  // Cleanup error dismiss timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (errorDismissTimeoutRef.current) {
+        clearTimeout(errorDismissTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // --- Utility Function: Record completed puzzle history ---
   const recordPuzzleHistory = useCallback(async (payload: any) => {
@@ -170,7 +242,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.log(`[History ${new Date().toISOString()}] recordPuzzleHistory completed in ${duration}ms`, result.data);
       if (!result.data?.success) {
         const errMsg = result.data?.error || 'Unknown backend error';
-        setError(`Failed to record puzzle history: ${errMsg}`);
+        setErrorWithAutoDismiss(`Failed to record puzzle history: ${errMsg}`, { autoDismiss: true });
       }
     } catch (error: any) {
       console.error(`[History ${new Date().toISOString()}] Error calling recordPuzzleHistory:`, error);
@@ -178,7 +250,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       if (error.code) {
         message = `(${error.code}) ${message}`;
       }
-      setError(`Failed to record puzzle history: ${message}`);
+      setErrorWithAutoDismiss(`Failed to record puzzle history: ${message}`, { autoDismiss: true });
     }
   }, []);
 
@@ -222,7 +294,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         }
     } catch (error: any) {
         console.error("GameContext: Error fetching user stats:", error);
-        setError(error.message || 'Failed to load user stats');
+        setErrorWithAutoDismiss(error.message || 'Failed to load user stats', { autoDismiss: true });
         setFreshStats({...defaultStats}); // Use defaults on error
     } finally {
         setIsLoadingStats(false);
@@ -230,6 +302,73 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   }, [cachedUserStats, currentUser, setFreshStats, setIsLoadingStats]);
   
   // Removed pending-move persistence; we only record at completion now
+
+  // --- Shared Move Processing Helper ---
+  // This function encapsulates the common logic for applying a color move,
+  // used by both handleColorSelect and the pending move useEffect.
+  // Note: Not wrapped in useCallback since it's called imperatively (not a dependency).
+  // All values are passed as parameters to avoid stale closures.
+  const processMoveAndUpdateState = (
+    row: number,
+    col: number,
+    newColor: TileColor,
+    currentPuzzle: DailyPuzzle,
+    currentMovesThisAttempt: number,
+    currentFirestoreData: FirestorePuzzleData | null,
+    currentHasDeclinedAutocomplete: boolean,
+    currentIsAutoSolving: boolean,
+    options: { enableLogging?: boolean } = {}
+  ): void => {
+    const { enableLogging = false } = options;
+
+    setHintCell(null);
+
+    const newMovesThisAttempt = currentMovesThisAttempt + 1;
+    setMovesThisAttempt(newMovesThisAttempt);
+
+    // Capture state BEFORE move for history tracking
+    if (currentFirestoreData) {
+      const puzzleGridState = convertArrayToFirestoreGrid(currentPuzzle.grid);
+      setUserStateHistory(prev => {
+        const newHistory = [...prev, puzzleGridState];
+        if (enableLogging) console.log(`[HISTORY] Captured state #${newHistory.length}`, puzzleGridState);
+        return newHistory;
+      });
+
+      const encodedAction = encodeAction(row, col, newColor, currentFirestoreData, currentPuzzle.grid.length);
+      setUserActionHistory(prev => {
+        const newActions = [...prev, encodedAction];
+        if (enableLogging) console.log(`[HISTORY] Captured action #${newActions.length}:`, encodedAction);
+        return newActions;
+      });
+    }
+
+    const updatedPuzzle = applyColorChange(currentPuzzle, row, col, newColor);
+    setPuzzle(updatedPuzzle);
+
+    const onPath = checkIfOnOptimalPath(updatedPuzzle.grid, updatedPuzzle.userMovesUsed, currentFirestoreData);
+    setIsOnOptimalPath(onPath);
+
+    // Capture final state if puzzle is solved or lost
+    if ((updatedPuzzle.isSolved || updatedPuzzle.isLost) && currentFirestoreData) {
+      const finalState = convertArrayToFirestoreGrid(updatedPuzzle.grid);
+      setUserStateHistory(prev => {
+        const newHistory = [...prev, finalState];
+        if (enableLogging) console.log(`[HISTORY] Captured FINAL state #${newHistory.length}`, finalState);
+        return newHistory;
+      });
+    }
+
+    if (updatedPuzzle.isSolved) {
+      handlePuzzleSolved(updatedPuzzle);
+    }
+
+    if (!updatedPuzzle.isSolved && !updatedPuzzle.isLost &&
+        shouldShowAutocomplete(updatedPuzzle) &&
+        !currentHasDeclinedAutocomplete && !currentIsAutoSolving) {
+      setShowAutocompleteModal(true);
+    }
+  };
 
   // --- Effects ---
 
@@ -424,6 +563,55 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     };
   }, [autoSolveIntervalId]);
 
+  // Apply pending move after guest account creation completes
+  useEffect(() => {
+    // Guard: prevent re-entry during processing
+    if (isProcessingPendingMoveRef.current) return;
+    if (!pendingMove || !isAuthReadyForPendingMove) return;
+    if (!isMountedRef.current) return; // Prevent state updates on unmounted component
+
+    isProcessingPendingMoveRef.current = true;
+
+    try {
+      debugLog('gameContext', 'Auth ready after guest creation, applying pending move:', pendingMove);
+
+      const { row, col, color } = pendingMove;
+
+      // Clear state BEFORE processing to close the race window
+      setPendingMove(null);
+      setIsCreatingGuestAccount(false);
+
+      // Use refs to get current values without adding them as dependencies
+      const currentPuzzle = puzzleRef.current;
+      if (currentPuzzle && !currentPuzzle.isSolved && !currentPuzzle.isLost) {
+        setSelectedTile({ row, col });
+        processMoveAndUpdateState(
+          row,
+          col,
+          color,
+          currentPuzzle,
+          movesThisAttemptRef.current,
+          firestoreDataRef.current,
+          hasDeclinedAutocompleteRef.current,
+          isAutoSolvingRef.current
+        );
+        setSelectedTile(null);
+      }
+    } finally {
+      isProcessingPendingMoveRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingMove, isAuthReadyForPendingMove]);
+  // Dependencies intentionally limited to trigger conditions only:
+  // - processMoveAndUpdateState: Not a dependency because it's a plain function (not useCallback)
+  //   that receives all needed values as parameters and reads current state from refs.
+  // - State setters (setSelectedTile, setHintCell, setPendingMove, setIsCreatingGuestAccount,
+  //   setMovesThisAttempt, setShowAutocompleteModal): React guarantees useState setters are
+  //   referentially stable across renders (https://react.dev/reference/react/useState#setstate).
+  // - Refs (puzzleRef, movesThisAttemptRef, firestoreDataRef, hasDeclinedAutocompleteRef,
+  //   isAutoSolvingRef): Ref objects are stable; their .current values are read at
+  //   execution time, not captured as closure dependencies.
+
   // --- Event Handlers ---
 
   const handleTileClick = (row: number, col: number) => {
@@ -434,11 +622,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setShowColorPicker(true);
   };
 
-  const handleColorSelect = (newColor: TileColor) => {
+  const handleColorSelect = async (newColor: TileColor) => {
     if (isAutoSolving) return; // Block input during auto-solve
     if (!selectedTile || !puzzle) return;
-
-    setHintCell(null);
+    if (isCreatingGuestAccount) return; // Block while creating guest account
 
     const { row, col } = selectedTile;
     const oldColor = puzzle.grid[row][col];
@@ -447,56 +634,94 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       return;
     }
 
-    // Increment local move counter
-    const newMovesThisAttempt = movesThisAttempt + 1;
-    setMovesThisAttempt(newMovesThisAttempt);
-
-    // Capture state BEFORE move for history tracking
-    if (firestoreData) {
-      const puzzleGridState = convertArrayToFirestoreGrid(puzzle.grid);
-      setUserStateHistory(prev => {
-        const newHistory = [...prev, puzzleGridState];
-        console.log(`[HISTORY] Captured state #${newHistory.length}`, puzzleGridState);
-        return newHistory;
-      });
-
-      const encodedAction = encodeAction(row, col, newColor, firestoreData, puzzle.grid.length);
-      setUserActionHistory(prev => {
-        const newActions = [...prev, encodedAction];
-        console.log(`[HISTORY] Captured action #${newActions.length}:`, encodedAction);
-        return newActions;
-      });
+    // If guest creation previously failed, allow local-only play without retry attempts
+    if (guestCreationFailedRef.current && isUnauthenticatedBrowsing && !currentUser) {
+      debugLog('gameContext', 'Guest creation previously failed - playing locally');
+      processMoveAndUpdateState(
+        row,
+        col,
+        newColor,
+        puzzle,
+        movesThisAttempt,
+        firestoreData,
+        hasDeclinedAutocomplete,
+        isAutoSolving,
+        { enableLogging: true }
+      );
+      closeColorPicker();
+      return;
     }
 
-    const updatedPuzzle = applyColorChange(puzzle, row, col, newColor);
-    setPuzzle(updatedPuzzle);
+    // If user is unauthenticated, create guest account on first move
+    if (isUnauthenticatedBrowsing && !currentUser) {
+      debugLog('gameContext', 'First move detected - creating guest account before applying move...');
+      setIsCreatingGuestAccount(true);
+      const moveToApply = { row, col, color: newColor }; // Capture locally before async
+      setPendingMove(moveToApply);
+      closeColorPicker();
 
-    const onPath = checkIfOnOptimalPath(updatedPuzzle.grid, updatedPuzzle.userMovesUsed, firestoreData);
-    setIsOnOptimalPath(onPath);
+      try {
+        await playAsGuest();
+        debugLog('gameContext', 'Guest account created successfully, move will be applied via useEffect');
+        // The pending move will be applied by a useEffect when auth state changes
+      } catch (error) {
+        console.error("Failed to create guest account:", error);
 
+        // Track failure count for progressive messaging
+        const newFailureCount = guestAuthFailureCount + 1;
+        setGuestAuthFailureCount(newFailureCount);
+        guestCreationFailedRef.current = true;
+
+        // Progressive error messaging based on consecutive failures
+        if (newFailureCount >= 3) {
+          setErrorWithAutoDismiss(
+            "Connection issues persist. Refresh the page to try again, or keep playing offline.",
+            { autoDismiss: false }
+          );
+        } else {
+          setErrorWithAutoDismiss(
+            "Couldn't save progress. You can keep playing - we'll try reconnecting.",
+            { autoDismiss: true }
+          );
+        }
+
+        // Apply color change locally so user's action isn't lost
+        // Use try/finally to ensure state cleanup even if local update fails
+        try {
+          const currentPuzzle = puzzleRef.current;
+          if (currentPuzzle && !currentPuzzle.isSolved && !currentPuzzle.isLost) {
+            const updatedPuzzle = applyColorChange(currentPuzzle, moveToApply.row, moveToApply.col, moveToApply.color);
+            setPuzzle(updatedPuzzle);
+            setMovesThisAttempt(prev => prev + 1);
+
+            if (updatedPuzzle.isSolved) {
+              setShowWinModal(true);
+            }
+          }
+        } catch (localError) {
+          console.error("Failed to apply local color change:", localError);
+        } finally {
+          // Always clean up state to prevent blocking future moves
+          setIsCreatingGuestAccount(false);
+          setPendingMove(null);
+        }
+      }
+      return;
+    }
+
+    // Apply the move using shared helper
+    processMoveAndUpdateState(
+      row,
+      col,
+      newColor,
+      puzzle,
+      movesThisAttempt,
+      firestoreData,
+      hasDeclinedAutocomplete,
+      isAutoSolving,
+      { enableLogging: true }
+    );
     closeColorPicker();
-
-    // Capture final state if puzzle is solved or lost
-    if ((updatedPuzzle.isSolved || updatedPuzzle.isLost) && firestoreData) {
-      const finalState = convertArrayToFirestoreGrid(updatedPuzzle.grid);
-      setUserStateHistory(prev => {
-        const newHistory = [...prev, finalState];
-        console.log(`[HISTORY] Captured FINAL state #${newHistory.length}`, finalState);
-        return newHistory;
-      });
-    }
-
-    if (updatedPuzzle.isSolved) {
-      handlePuzzleSolved(updatedPuzzle); // Will clear pending moves inside
-    }
-
-    if (updatedPuzzle.isLost && !isLostReported) {
-      // Loss event is handled by useEffect, need to clear there too
-    }
-
-    if (!updatedPuzzle.isSolved && !updatedPuzzle.isLost && shouldShowAutocomplete(updatedPuzzle) && !hasDeclinedAutocomplete && !isAutoSolving) {
-      setShowAutocompleteModal(true);
-    }
   };
 
   const closeColorPicker = () => {
@@ -890,6 +1115,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setHasRecordedCompletion(false);
       setHasUsedBotSolutionThisAttempt(false);
 
+      // Reset guest auth failure state to allow retry on new attempt
+      guestCreationFailedRef.current = false;
+      setGuestAuthFailureCount(0);
+
       // Reset UI state
       setHintCell(null);
       setShowAutocompleteModal(false);
@@ -1183,6 +1412,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     handleBotSolutionConfirm,
     handleCancelAutoSolution,
     isAutoSolving,
+    isCreatingGuestAccount,
     showBotSolutionModal,
     setShowBotSolutionModal,
     handleSettingsChange,

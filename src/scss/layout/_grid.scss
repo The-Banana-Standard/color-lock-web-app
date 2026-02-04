@@ -8,6 +8,11 @@
   --grid-cell-container-size: #{$grid-cell-container-size};
   --grid-cell-size: #{$grid-cell-size};
   --grid-cell-margin: #{$grid-cell-margin};
+
+  @include tiny-mobile {
+    --grid-cell-container-size: 62px;
+    --grid-cell-size: 58px;
+  }
 }
 
 .grid-row {
@@ -129,4 +134,26 @@
   border-radius: $border-radius-small;
   z-index: 1;
   animation: preview-pulse 1.5s infinite;
-} 
+}
+
+// Guest auth loading overlay
+.guest-auth-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  border-radius: inherit;
+
+  p {
+    color: $color-white;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+}

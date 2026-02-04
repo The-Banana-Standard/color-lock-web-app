@@ -13,6 +13,7 @@ import { faInstagram, faFacebook, faRedditAlien } from '@fortawesome/free-brands
 import { DifficultyLevel, defaultSettings } from '../types/settings';
 import { loadSettings, saveSettings } from '../utils/storageUtils';
 import GradientTitle from './GradientTitle';
+import { debugLog } from '../utils/debugUtils';
 
 interface DailyScoreStats {
   lowestScore: number | null;
@@ -26,7 +27,7 @@ interface LandingScreenProps {
 }
 
 const LandingScreen: React.FC<LandingScreenProps> = () => {
-  const { signIn, signUp, playAsGuest, logOut, currentUser, isGuest, isAuthenticated } = useAuth();
+  const { signIn, signUp, playAsGuest, logOut, currentUser, isGuest, isAuthenticated, isUnauthenticatedBrowsing } = useAuth();
   const { setShowLandingPage, navigateToScreen } = useNavigation();
   const { dailyScoresStats, dailyScoresV2Stats, loadingStates, errorStates } = useDataCache(); // Use the cache context
 
@@ -217,6 +218,16 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
   };
 
   const handlePlayGame = () => {
+    // If user is unauthenticated, start guest account creation in the background
+    // This way the account will hopefully be ready by the time they make their first move
+    if (isUnauthenticatedBrowsing && !currentUser) {
+      debugLog('landingScreen', 'Starting guest account creation in background before navigating to game');
+      // Fire-and-forget - don't await, just start the process
+      playAsGuest().catch(err => {
+        // Log error but don't block navigation - GameContext will handle retry on first move if needed
+        console.error('Background guest account creation failed:', err);
+      });
+    }
     setShowLandingPage(false);
   };
 
@@ -267,7 +278,7 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
 
   // Check if user is authenticated as a regular user (not guest)
   const isRegularUser = isAuthenticated && !isGuest;
-  console.log("Auth state:", { isAuthenticated, isGuest, isRegularUser, displayName: currentUser?.displayName });
+  debugLog('landingScreen', 'Auth state:', { isAuthenticated, isGuest, isRegularUser, isUnauthenticatedBrowsing, displayName: currentUser?.displayName });
 
   // Get derived stats values from context
   const displayStats = dailyScoresStats || { lowestScore: null, averageScore: null, totalPlayers: 0, playersWithLowestScore: 0 };
@@ -367,7 +378,7 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
           <>
             <button
               className="landing-play-button"
-              onClick={handleGuestMode}
+              onClick={handlePlayGame}
               disabled={authLoading}
             >
               Play Now!

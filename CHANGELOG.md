@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Deferred guest authentication allowing users to browse puzzles before signing in
+- Guest account creation in background on "Play Now" for smoother onboarding
+- Loading overlay during guest account setup to indicate progress
 - Dark mode styling across all modals (Settings, Stats, Tutorial, Win, Loss, Sign in/Sign up, Autocomplete)
 - Gradient title text matching emoji colors for modal headers
 - Best score notification trigger cloud function for alerting users when their scores are beaten
@@ -17,6 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Firestore rules: public read access with App Check for puzzles, leaderboards, and scores (enables unauthenticated browsing)
+- Updated security model documentation in `firestore-schema.md` with public read rationale
 - Moved `styling-guide.md` from `.claude/skills/` to `documentation/` for better discoverability
 - Firebase emulator port changed from 8080 to 8081 to avoid conflicts
 - Expanded `firestore-schema.md` with complete collection reference documentation

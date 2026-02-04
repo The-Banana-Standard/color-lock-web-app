@@ -10,17 +10,26 @@ service cloud.firestore {
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
+
+    function hasValidAppCheck() {
+      return request.app != null;
+    }
+
     // Puzzles collection (legacy) - read-only for authenticated users
     match /puzzles/{puzzleId} {
       allow read: if isAuthenticated();
       allow write: if false; // Only backend/Cloud Functions can write
     }
     
-    // PuzzlesV2 collection - read-only for authenticated users
+    // PuzzlesV2 collection - PUBLIC READ for deferred guest auth
+    // SECURITY MODEL:
+    // - Public read enables users to browse puzzles before signing in
+    // - Only game data exposed (grids, target colors, algo scores) - no PII
+    // - App Check required: prevents bot/script abuse while allowing unauthenticated users
+    // - Backend-only writes via Admin SDK (bypasses these rules)
     match /puzzlesV2/{puzzleId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Only backend/Cloud Functions can write
+      allow read: if hasValidAppCheck();
+      allow write: if false;
     }
     
     // Users collection - STRICT: users can ONLY access their own document
@@ -47,25 +56,39 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
     
-    // Daily scores V2 - READ-ONLY for all authenticated users
-    // Contains: { easy: {userId: moves}, medium: {userId: moves}, hard: {userId: moves} }
-    // Note: User IDs are exposed here for leaderboard purposes (standard for games)
+    // Daily scores V2 - PUBLIC READ for deferred guest auth
+    // SECURITY MODEL:
+    // - Public read enables leaderboard viewing before signing in
+    // - Contains: { difficulty: {userId: moveCount} }
+    // - User IDs are opaque Firebase Auth UIDs (not reversible to email/PII)
+    // - Display names fetched separately only for opted-in users
+    // - App Check required: prevents bot/script abuse while allowing unauthenticated users
+    // - Backend-only writes via Admin SDK
     match /dailyScoresV2/{puzzleId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // ONLY Cloud Functions can write
+      allow read: if hasValidAppCheck();
+      allow write: if false;
     }
     
-    // Global leaderboards - READ-ONLY for authenticated users
-    // Intentionally public for competitive gaming features
+    // Global leaderboards - PUBLIC READ for competitive gaming features
+    // SECURITY MODEL:
+    // - Public read is standard practice for game leaderboards
+    // - Contains aggregated scores, rankings, user IDs and display names
+    // - Users opt-in to leaderboard exposure by playing the game
+    // - App Check required: prevents bot/script abuse while allowing unauthenticated users
+    // - Backend-only writes via Admin SDK
     match /leaderboards/{document=**} {
-      allow read: if isAuthenticated();
-      allow write: if false; // ONLY Cloud Functions can write
+      allow read: if hasValidAppCheck();
+      allow write: if false;
     }
 
-    // Best Scores: Allow authenticated users to read (scores are public)
-    // Writes only via Cloud Functions (Admin SDK bypasses rules)
+    // Best Scores - PUBLIC READ for educational/competitive feature
+    // SECURITY MODEL:
+    // - Public read shows optimal solutions for puzzles (educational value)
+    // - Contains user ID and display name of top scorer (users opt-in via achievement)
+    // - App Check required: prevents bot/script abuse while allowing unauthenticated users
+    // - Backend-only writes via Admin SDK
     match /bestScores/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if hasValidAppCheck();
       allow write: if false;
     }
     

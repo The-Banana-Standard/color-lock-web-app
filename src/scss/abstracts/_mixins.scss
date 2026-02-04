@@ -229,6 +229,18 @@
 // ===========================================
 // RESPONSIVE MIXINS
 // ===========================================
+@mixin tiny-mobile {
+  @media (max-width: #{$breakpoint-tiny-mobile}) {
+    @content;
+  }
+}
+
+@mixin small-mobile {
+  @media (max-width: #{$breakpoint-small-mobile}) {
+    @content;
+  }
+}
+
 @mixin mobile {
   @media (max-width: #{$breakpoint-mobile}) {
     @content;

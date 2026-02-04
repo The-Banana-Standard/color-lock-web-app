@@ -302,13 +302,50 @@ Daily and aggregate usage analytics. Contains both daily documents and aggregate
 |------------|------|-------|
 | `users/{userId}` | Owner only | Owner only (restricted fields) |
 | `userPuzzleHistory/{userId}/**` | Owner only | Owner only |
-| `puzzlesV2/*` | Authenticated | Backend only |
-| `dailyScoresV2/*` | Authenticated | Backend only |
-| `bestScores/*` | Authenticated | Backend only |
-| `leaderboards/**` | Authenticated | Backend only |
+| `puzzlesV2/*` | **App Check required** | Backend only |
+| `dailyScoresV2/*` | **App Check required** | Backend only |
+| `bestScores/*` | **App Check required** | Backend only |
+| `leaderboards/**` | **App Check required** | Backend only |
 | All other paths | Denied | Denied |
 
 **Protected fields on user update:** `email`, `emailVerified`, `createdAt`
+
+---
+
+## Security Model: Public Read Collections
+
+The following collections have public read access to support **deferred guest authentication**, which allows users to browse and preview puzzles before signing in:
+
+| Collection | Public Data | Rationale |
+|------------|-------------|-----------|
+| `puzzlesV2` | Puzzle grids, target colors, algo scores | Game content only, no PII |
+| `dailyScoresV2` | User IDs + move counts per difficulty | Leaderboard data, standard for games |
+| `bestScores` | Best solver ID, name, solution | Educational feature, opt-in via achievement |
+| `leaderboards` | Rankings with user IDs and names | Competitive feature, opt-in by playing |
+
+### Security Protections in Place
+
+1. **Firebase App Check**: Enforced at multiple levels:
+   - **Firestore Rules**: `hasValidAppCheck()` helper requires valid App Check token for public reads
+   - **Cloud Functions**: `enforceAppCheck: true` via `getAppCheckConfig()` helper
+   - Verifies requests come from the legitimate app instance using reCAPTCHA v3
+
+2. **No PII Exposure**: Public collections contain only:
+   - Opaque Firebase Auth UIDs (not reversible to email/personal info)
+   - Display names (user-chosen, opt-in)
+   - Game data (scores, puzzle states)
+
+3. **Backend-Only Writes**: All public collections are write-protected (`allow write: if false`). Data is only modified via Cloud Functions using Admin SDK.
+
+4. **User Data Protection**: Personal data in `users/*`, `userStats/*`, and `userPuzzleHistory/*` remains owner-only access.
+
+### Verifying App Check Enforcement
+
+To verify App Check is properly enforced in production:
+
+1. **Cloud Functions logs**: Check for `App Check verified: true` in function invocation logs
+2. **Firebase Console**: Go to App Check > Overview to see enforcement status and blocked requests
+3. **Production test**: Attempt to call functions without valid App Check token (should fail with `app-check-failed` error)
 
 ---
 

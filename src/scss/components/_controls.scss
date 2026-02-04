@@ -258,6 +258,11 @@ input:checked + .toggle-slider:before {
   @include dark-mode {
     color: $color-light-taupe;
   }
+
+  @include small-mobile {
+    top: auto;
+    bottom: $spacing-md;
+  }
 }
 
 .difficulty-text {

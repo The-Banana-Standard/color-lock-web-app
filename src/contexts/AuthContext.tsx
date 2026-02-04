@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, EmailAuthProvider, linkWithCredential, updateProfile } from 'firebase/auth';
 import { auth, deleteAccountCallable } from '../services/firebaseService';
+import { debugLog, LogLevel } from '../utils/debugUtils';
 
 interface AuthContextType {
   currentUser: User | null;
   isGuest: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isUnauthenticatedBrowsing: boolean;
   signIn: (email: string, password: string) => Promise<User>;
   signUp: (email: string, password: string, displayName: string) => Promise<User>;
   logOut: () => Promise<void>;
@@ -33,28 +35,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isUnauthenticatedBrowsing, setIsUnauthenticatedBrowsing] = useState<boolean>(false);
 
-  // Memoize playAsGuest
+  /**
+   * Signs in anonymously as a guest user.
+   * Called on first move for unauthenticated users.
+   *
+   * Dependencies intentionally empty: This callback captures only stable references
+   * (Firebase `auth` module, `debugLog` utility) - no React state. It reads
+   * `auth.currentUser` directly from Firebase rather than closure state, ensuring
+   * it always has fresh values. State updates flow through onAuthStateChanged.
+   */
   const playAsGuest = useCallback(async (): Promise<void> => {
     if (!auth) {
-      console.error('Auth Service not available for playAsGuest.');
+      debugLog('authContext', 'Auth Service not available for playAsGuest.', null, LogLevel.ERROR);
       throw new Error('Authentication service is not available');
     }
     if (auth.currentUser) {
-      console.log('User already authenticated, skipping guest sign-in.');
+      debugLog('authContext', 'User already authenticated, skipping guest sign-in.');
       setCurrentUser(auth.currentUser);
       setIsAuthenticated(true);
       setIsGuest(auth.currentUser.isAnonymous);
+      setIsUnauthenticatedBrowsing(false);
       setIsLoading(false);
       return;
     }
-    console.log('Attempting anonymous sign-in...');
+    debugLog('authContext', 'Attempting anonymous sign-in (triggered by user action)...');
     try {
       const userCredential = await signInAnonymously(auth);
-      console.log('Anonymous sign-in successful:', userCredential.user.uid);
+      debugLog('authContext', 'Anonymous sign-in successful:', userCredential.user.uid);
       localStorage.setItem('authPreference', 'guest');
+      setIsUnauthenticatedBrowsing(false);
+      // Note: onAuthStateChanged will handle setting currentUser, isAuthenticated, isGuest
     } catch (error) {
-      console.error('Anonymous sign-in failed:', error);
+      debugLog('authContext', 'Anonymous sign-in failed:', error, LogLevel.ERROR);
       setIsLoading(false);
       throw error;
     }
@@ -62,14 +76,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     if (!auth) {
-      console.error("Auth service not initialized. Cannot set up listener.");
+      debugLog('authContext', 'Auth service not initialized. Cannot set up listener.', null, LogLevel.ERROR);
       setIsLoading(false);
       return;
     }
 
-    console.log("Setting up onAuthStateChanged listener...");
+    debugLog('authContext', 'Setting up onAuthStateChanged listener...');
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Auth State Changed:", user ? `User UID: ${user.uid}, Anonymous: ${user.isAnonymous}, Name: ${user.displayName}` : "No user");
+      debugLog('authContext', 'Auth State Changed:', user ? { uid: user.uid, isAnonymous: user.isAnonymous, displayName: user.displayName } : 'No user');
       setCurrentUser(user);
 
       if (user) {
@@ -77,9 +91,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const wasAnonymous = isGuest; // capture previous state
         setIsGuest(user.isAnonymous);
         setIsLoading(false); // Auth state determined
-        
-        console.log(`Auth state updated - isAuthenticated: ${true}, isGuest: ${user.isAnonymous}. Changed from guest: ${wasAnonymous && !user.isAnonymous}`);
-        
+
+        debugLog('authContext', 'Auth state updated', { isAuthenticated: true, isGuest: user.isAnonymous, changedFromGuest: wasAnonymous && !user.isAnonymous });
+
         if (!user.isAnonymous) {
            localStorage.setItem('authPreference', 'user');
         }
@@ -87,20 +101,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         setIsAuthenticated(false);
         setIsGuest(false);
-        console.log("No user found, attempting guest sign-in...");
-        playAsGuest().catch(err => {
-            console.error("Failed to automatically sign in as guest:", err);
-            setIsLoading(false); // Stop loading even if guest sign-in fails
-        });
-        // *** Data fetching will be triggered in AuthenticatedApp after guest sign-in completes (or fails) ***
+        setIsUnauthenticatedBrowsing(true);
+        setIsLoading(false);
+        debugLog('authContext', 'No user found, allowing unauthenticated browsing. Guest account will be created on first move.');
+        // Guest account creation is now deferred to first move in GameContext
       }
     });
 
     return () => {
-      console.log("Cleaning up onAuthStateChanged listener.");
+      debugLog('authContext', 'Cleaning up onAuthStateChanged listener.', null, LogLevel.DEBUG);
       unsubscribe();
     };
-  }, [playAsGuest, isGuest]); // Add isGuest dependency
+    /**
+     * Intentional empty deps: Auth listener sets up once on mount.
+     * - setState functions (setCurrentUser, etc.) are stable references
+     * - No closure captures state variables - Firebase auth is the source of truth
+     * - Cleanup properly unsubscribes on unmount
+     */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const signIn = async (email: string, password: string): Promise<User> => {
     if (!auth) {
@@ -125,19 +144,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       try {
           if (currentAuthUser && currentAuthUser.isAnonymous) {
-              console.log(`Attempting to link anonymous user (${currentAuthUser.uid}) with email: ${email}`);
+              debugLog('authContext', 'Attempting to link anonymous user with email', { uid: currentAuthUser.uid, email });
               const credential = EmailAuthProvider.credential(email, password);
               userCredential = await linkWithCredential(currentAuthUser, credential); // Assign here
-              console.log(`Successfully linked anonymous user. UID remains: ${userCredential.user.uid}`);
-              
+              debugLog('authContext', 'Successfully linked anonymous user', { uid: userCredential.user.uid });
+
               // Explicitly update state for converted anonymous user
               setIsGuest(false);
               setIsAuthenticated(true);
           } else {
-              console.log(`No anonymous user detected or user not anonymous, creating new user with email: ${email}`);
+              debugLog('authContext', 'No anonymous user detected, creating new user', { email });
               userCredential = await createUserWithEmailAndPassword(auth, email, password); // Assign here
-              console.log(`Successfully created new user: ${userCredential.user.uid}`);
-              
+              debugLog('authContext', 'Successfully created new user', { uid: userCredential.user.uid });
+
               // For new users, set these states as well
               setIsGuest(false);
               setIsAuthenticated(true);
@@ -147,12 +166,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (userCredential.user) {
               try {
                   await updateProfile(userCredential.user, { displayName: displayName });
-                  console.log(`Display name "${displayName}" set for user ${userCredential.user.uid}`);
+                  debugLog('authContext', 'Display name set for user', { displayName, uid: userCredential.user.uid });
                   // Update local state immediately to reflect the change faster
                   // Note: onAuthStateChanged will also fire, but this makes the UI update quicker
                   setCurrentUser({ ...userCredential.user, displayName: displayName });
               } catch (profileError) {
-                  console.error("Error setting display name:", profileError);
+                  debugLog('authContext', 'Error setting display name:', profileError, LogLevel.ERROR);
                   // Decide how to handle this - maybe log it but don't fail the whole signup?
                   // For now, just log and continue.
               }
@@ -163,7 +182,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return userCredential.user; // Return the user object
 
       } catch (error: any) {
-          console.error("Sign Up Error:", error);
+          debugLog('authContext', 'Sign Up Error:', error, LogLevel.ERROR);
           if (error.code === 'auth/credential-already-in-use') {
               throw new Error("This email address is already associated with an account. Please sign in or use a different email.");
           } else if (error.code === 'auth/email-already-in-use') {
@@ -194,41 +213,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!auth) {
       throw new Error('Authentication service is not available');
     }
-    
+
     if (!currentUser) {
       throw new Error('No user is currently signed in');
     }
-    
+
     if (currentUser.isAnonymous) {
       throw new Error('Anonymous accounts cannot be deleted this way. Please sign in with an email account first.');
     }
-    
-    console.log(`Attempting to delete account for user: ${currentUser.uid}`);
-    
+
+    debugLog('authContext', 'Attempting to delete account', { uid: currentUser.uid });
+
     try {
       // Call the Cloud Function to delete the account
       const result = await deleteAccountCallable({ email, password });
-      
+
       if (result.data.success) {
-        console.log('Account deleted successfully via Cloud Function');
-        
+        debugLog('authContext', 'Account deleted successfully via Cloud Function');
+
         // Clear local state
         setCurrentUser(null);
         setIsAuthenticated(false);
         setIsGuest(false);
         localStorage.removeItem('authPreference');
-        
+
         // Clear any other local storage data related to the app
         // Note: The Cloud Function already deleted server-side data
         localStorage.clear();
-        
-        console.log('Local state cleared after account deletion');
+
+        debugLog('authContext', 'Local state cleared after account deletion');
       } else {
         throw new Error(result.data.error || 'Failed to delete account');
       }
     } catch (error: any) {
-      console.error('Delete account error:', error);
-      
+      debugLog('authContext', 'Delete account error:', error, LogLevel.ERROR);
+
       // Extract error message from Firebase Functions error
       if (error.code === 'functions/invalid-argument') {
         throw new Error(error.message || 'Invalid email or password');
@@ -237,7 +256,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else if (error.code === 'functions/failed-precondition') {
         throw new Error(error.message || 'Account deletion is not available for this account type');
       }
-      
+
       throw error;
     }
   };
@@ -247,6 +266,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isGuest,
     isAuthenticated,
     isLoading,
+    isUnauthenticatedBrowsing,
     signIn,
     signUp,
     logOut,

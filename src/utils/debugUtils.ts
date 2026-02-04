@@ -9,12 +9,17 @@
 const ENABLE_DEBUG_LOGGING = process.env.NODE_ENV !== 'production';
 
 // Enable/disable logging for specific components
+// Note: ENABLE_DEBUG_LOGGING must also be true (non-production) for these to have effect
+// Set individual components to true when actively debugging that area
 const DEBUG_COMPONENTS = {
-  tutorial: true,
-  tutorialHighlight: true,
-  tutorialModal: true,
-  tutorialOverlay: true
-};
+  tutorial: false,
+  tutorialHighlight: false,
+  tutorialModal: false,
+  tutorialOverlay: false,
+  authContext: false,
+  gameContext: false,
+  landingScreen: false,
+} as const;
 
 // Log levels
 export enum LogLevel {

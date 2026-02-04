@@ -955,6 +955,12 @@
   top: $spacing-md;   // Adjust vertical position within card
   left: $spacing-md;  // Adjust horizontal position within card
   z-index: $z-index-modal + 1; // Ensure it appears above other elements
+
+  @include small-mobile {
+    position: fixed;
+    top: $spacing-sm;
+    left: $spacing-sm;
+  }
 }
 
 .hamburger-container {
