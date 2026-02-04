@@ -236,20 +236,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // --- Utility Function: Record completed puzzle history ---
   const recordPuzzleHistory = useCallback(async (payload: any) => {
     try {
-      const startTime = performance.now();
       const result = await recordPuzzleHistoryCallable(payload);
-      const duration = (performance.now() - startTime).toFixed(2);
-      console.log(`[History ${new Date().toISOString()}] recordPuzzleHistory completed in ${duration}ms`, result.data);
       if (!result.data?.success) {
         const errMsg = result.data?.error || 'Unknown backend error';
         setErrorWithAutoDismiss(`Failed to record puzzle history: ${errMsg}`, { autoDismiss: true });
       }
     } catch (error: any) {
-      console.error(`[History ${new Date().toISOString()}] Error calling recordPuzzleHistory:`, error);
-      let message = error.message || 'Unknown error calling function';
-      if (error.code) {
-        message = `(${error.code}) ${message}`;
-      }
+      console.error('Error calling recordPuzzleHistory:', error);
+      const message = error.code ? `(${error.code}) ${error.message}` : error.message || 'Unknown error';
       setErrorWithAutoDismiss(`Failed to record puzzle history: ${message}`, { autoDismiss: true });
     }
   }, []);
@@ -258,44 +252,37 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const fetchAndSetUserStats = useCallback(async () => {
     // Check cache first
     if (cachedUserStats) {
-        console.log("GameContext: Using cached user stats.");
         setFreshStats(cachedUserStats);
         setIsLoadingStats(false);
         setError(null);
         return;
     }
 
-    // If not in cache or user is guest/unauthenticated, fetch (if applicable)
+    // If no user logged in, use defaults
     if (!currentUser) {
-        console.log("GameContext: Skipping user stats fetch (no user logged in).");
-        setFreshStats({...defaultStats}); // Reset to default if no cache and no user
+        setFreshStats({...defaultStats});
         setIsLoadingStats(false);
         return;
     }
 
-    console.log("GameContext: No cached user stats, fetching from backend...");
     setIsLoadingStats(true);
-    
+
     try {
         const result = await getPersonalStatsCallable({
             puzzleId: dateKeyForToday(),
             difficulty: settings.difficultyLevel
         });
-        if (result.data.success) {
-            if (result.data.stats) {
-                console.log("GameContext: User stats fetched successfully.");
-                setFreshStats(result.data.stats);
-            } else {
-                console.log("GameContext: No stats found for user, using defaults.");
-                setFreshStats({...defaultStats});
-            }
+        if (result.data.success && result.data.stats) {
+            setFreshStats(result.data.stats);
+        } else if (result.data.success) {
+            setFreshStats({...defaultStats});
         } else {
             throw new Error(result.data.error || 'Failed to fetch user stats');
         }
     } catch (error: any) {
-        console.error("GameContext: Error fetching user stats:", error);
+        console.error("Error fetching user stats:", error);
         setErrorWithAutoDismiss(error.message || 'Failed to load user stats', { autoDismiss: true });
-        setFreshStats({...defaultStats}); // Use defaults on error
+        setFreshStats({...defaultStats});
     } finally {
         setIsLoadingStats(false);
     }
@@ -304,9 +291,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // Removed pending-move persistence; we only record at completion now
 
   // --- Shared Move Processing Helper ---
-  // This function encapsulates the common logic for applying a color move,
-  // used by both handleColorSelect and the pending move useEffect.
-  // Note: Not wrapped in useCallback since it's called imperatively (not a dependency).
+  // Encapsulates common logic for applying a color move.
   // All values are passed as parameters to avoid stale closures.
   const processMoveAndUpdateState = (
     row: number,
@@ -316,11 +301,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     currentMovesThisAttempt: number,
     currentFirestoreData: FirestorePuzzleData | null,
     currentHasDeclinedAutocomplete: boolean,
-    currentIsAutoSolving: boolean,
-    options: { enableLogging?: boolean } = {}
+    currentIsAutoSolving: boolean
   ): void => {
-    const { enableLogging = false } = options;
-
     setHintCell(null);
 
     const newMovesThisAttempt = currentMovesThisAttempt + 1;
@@ -329,18 +311,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // Capture state BEFORE move for history tracking
     if (currentFirestoreData) {
       const puzzleGridState = convertArrayToFirestoreGrid(currentPuzzle.grid);
-      setUserStateHistory(prev => {
-        const newHistory = [...prev, puzzleGridState];
-        if (enableLogging) console.log(`[HISTORY] Captured state #${newHistory.length}`, puzzleGridState);
-        return newHistory;
-      });
+      setUserStateHistory(prev => [...prev, puzzleGridState]);
 
       const encodedAction = encodeAction(row, col, newColor, currentFirestoreData, currentPuzzle.grid.length);
-      setUserActionHistory(prev => {
-        const newActions = [...prev, encodedAction];
-        if (enableLogging) console.log(`[HISTORY] Captured action #${newActions.length}:`, encodedAction);
-        return newActions;
-      });
+      setUserActionHistory(prev => [...prev, encodedAction]);
     }
 
     const updatedPuzzle = applyColorChange(currentPuzzle, row, col, newColor);
@@ -352,11 +326,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // Capture final state if puzzle is solved or lost
     if ((updatedPuzzle.isSolved || updatedPuzzle.isLost) && currentFirestoreData) {
       const finalState = convertArrayToFirestoreGrid(updatedPuzzle.grid);
-      setUserStateHistory(prev => {
-        const newHistory = [...prev, finalState];
-        if (enableLogging) console.log(`[HISTORY] Captured FINAL state #${newHistory.length}`, finalState);
-        return newHistory;
-      });
+      setUserStateHistory(prev => [...prev, finalState]);
     }
 
     if (updatedPuzzle.isSolved) {
@@ -383,7 +353,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       // 1. Check Cache
       const cachedPuzzleForDifficulty = cachedPuzzleDataMap?.[difficulty];
       if (cachedPuzzleForDifficulty) {
-        console.log("GameContext: Using cached puzzle data.");
         try {
             setFirestoreData(cachedPuzzleForDifficulty); // Store raw data
             const newPuzzle = generatePuzzleFromDB(
@@ -418,11 +387,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       }
 
       // 2. Fetch if not in cache (or cache processing failed)
-      console.log(`GameContext: No cached puzzle data for ${difficulty}, fetching for date: ${DATE_TO_USE} via fetchPuzzleV2Callable`);
       try {
-        const result = await fetchPuzzleV2Callable({ date: DATE_TO_USE }); // Use imported callable
+        const result = await fetchPuzzleV2Callable({ date: DATE_TO_USE });
         if (result.data.success && result.data.data) {
-          console.log('GameContext: Successfully fetched puzzle data via fetchPuzzleV2Callable (fallback)');
           const fetchedFirestoreData = result.data.data[difficulty];
           if (!fetchedFirestoreData) {
             throw new Error(`Puzzle data for difficulty ${difficulty} is missing from fetchPuzzleV2 response`);
@@ -449,7 +416,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           throw new Error(result.data.error || 'Failed to fetch puzzle data');
         }
       } catch (err: any) {
-        console.error('GameContext: Error fetching puzzle via callable (fallback):', err);
+        console.error('Error fetching puzzle:', err);
         let errMsg = err.message || String(err);
         // Map Firebase error codes to user-friendly messages
         if (err.code === 'auth/unauthenticated') {
@@ -459,8 +426,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         } else if (err.code === 'failed-precondition') {
              errMsg = 'App verification failed. Please ensure your app is registered and up-to-date.';
         } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-             console.error('Puzzle fetch failed in local development. Ensure emulators are running and seeded (`npm run cursor-dev`).');
-             errMsg = 'Local dev: Failed to load puzzle. Check emulators and console.';
+             errMsg = 'Local dev: Failed to load puzzle. Check emulators.';
         } else {
              errMsg = 'Unable to load puzzle. Please check your connection and try again.';
         }
@@ -536,11 +502,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // Load cached win modal stats on mount
   useEffect(() => {
     if (cachedWinModalStats) {
-      console.log("GameContext: Loading cached win modal stats on mount.");
-      const dailyBestScore = bestScoresForDay[settings.difficultyLevel] ?? null;
       setWinModalStats({
         ...cachedWinModalStats,
-        dailyBestScore
+        dailyBestScore: bestScoresForDay[settings.difficultyLevel] ?? null
       });
     }
   }, [cachedWinModalStats, bestScoresForDay, settings.difficultyLevel]);
@@ -645,8 +609,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         movesThisAttempt,
         firestoreData,
         hasDeclinedAutocomplete,
-        isAutoSolving,
-        { enableLogging: true }
+        isAutoSolving
       );
       closeColorPicker();
       return;
@@ -718,8 +681,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       movesThisAttempt,
       firestoreData,
       hasDeclinedAutocomplete,
-      isAutoSolving,
-      { enableLogging: true }
+      isAutoSolving
     );
     closeColorPicker();
   };

@@ -4,10 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '../App';
 import { auth } from '../services/firebaseService';
 import '../scss/main.scss';
-import { dateKeyForToday } from '../utils/dateUtils';
-import { useDataCache } from '../contexts/DataCacheContext'; // Import the new context hook
+import { useDataCache } from '../contexts/DataCacheContext';
 import StatsModal from './StatsModal';
-import { GameStatistics } from '../types/stats';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInstagram, faFacebook, faRedditAlien } from '@fortawesome/free-brands-svg-icons';
 import { DifficultyLevel, defaultSettings } from '../types/settings';
@@ -15,21 +13,10 @@ import { loadSettings, saveSettings } from '../utils/storageUtils';
 import GradientTitle from './GradientTitle';
 import { debugLog } from '../utils/debugUtils';
 
-interface DailyScoreStats {
-  lowestScore: number | null;
-  averageScore: number | null;
-  totalPlayers: number;
-  playersWithLowestScore: number;
-}
-
-interface LandingScreenProps {
-  // No props needed for now
-}
-
-const LandingScreen: React.FC<LandingScreenProps> = () => {
+const LandingScreen: React.FC = () => {
   const { signIn, signUp, playAsGuest, logOut, currentUser, isGuest, isAuthenticated, isUnauthenticatedBrowsing } = useAuth();
-  const { setShowLandingPage, navigateToScreen } = useNavigation();
-  const { dailyScoresStats, dailyScoresV2Stats, loadingStates, errorStates } = useDataCache(); // Use the cache context
+  const { setShowLandingPage } = useNavigation();
+  const { dailyScoresV2Stats, loadingStates, errorStates } = useDataCache();
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
@@ -115,15 +102,9 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
         await signIn(email, password);
       } else if (authMode === 'signup') {
         await signUp(email, password, displayName);
-        console.log("Sign up completed successfully in LandingScreen");
       }
       setShowAuthModal(false);
-      
-      // Add a small delay before navigation to ensure auth state is updated
-      setTimeout(() => {
-        console.log("Navigating away from landing page after auth");
-        setShowLandingPage(false);
-      }, 500);
+      setTimeout(() => setShowLandingPage(false), 500);
     } catch (err: any) {
       console.error('Authentication error:', err);
       setAuthError(err.message || 'An error occurred during authentication');
@@ -169,37 +150,26 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
   const handleGuestMode = async () => {
     setAuthError(null);
     setAuthLoading(true);
-    console.log('LandingScreen: Starting guest mode flow');
     const safetyTimeout = setTimeout(() => {
-      console.warn('LandingScreen: Guest mode safety timeout triggered after 15 seconds');
       setAuthLoading(false);
       setAuthError('Operation timed out. Please try again.');
     }, 15000);
 
     try {
-      console.log('LandingScreen: Calling playAsGuest()');
       await playAsGuest();
-      console.log('LandingScreen: Guest login successful, navigating to game');
       clearTimeout(safetyTimeout);
       setTimeout(() => {
           if (isAuthenticated) {
               setShowLandingPage(false);
           } else {
-              console.error('LandingScreen: Authentication succeeded but state not updated');
               setAuthError('Authentication succeeded but failed to initialize user. Please refresh.');
           }
       }, 100);
     } catch (err: any) {
-      console.error('LandingScreen: Guest mode error:', err);
+      console.error('Guest mode error:', err);
       clearTimeout(safetyTimeout);
-      let errorMessage = 'An error occurred while entering guest mode';
-      if (err.message) {
-        errorMessage = err.message;
-      } else if (err.code) {
-        errorMessage = `Error code: ${err.code}`;
-      }
-      setAuthError(errorMessage);
-      setAuthLoading(false); // Ensure loading stops on error
+      setAuthError(err.message || (err.code ? `Error code: ${err.code}` : 'An error occurred while entering guest mode'));
+      setAuthLoading(false);
     }
   };
 
@@ -208,7 +178,6 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
     setAuthLoading(true);
     try {
       await logOut();
-      console.log("User signed out successfully");
     } catch (err: any) {
       console.error('Sign out error:', err);
       setAuthError(err.message || 'An error occurred while signing out');
@@ -263,26 +232,14 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
     setDisplayName('');
   };
 
-  const handleOpenStatsModal = () => {
-    setShowStatsModal(true);
-  };
-
-  const handleCloseStatsModal = () => {
-    setShowStatsModal(false);
-  };
-
   const handleShareStats = () => {
     // Share functionality is handled within StatsModal
-    console.log('Share stats triggered from landing screen');
   };
 
   // Check if user is authenticated as a regular user (not guest)
   const isRegularUser = isAuthenticated && !isGuest;
   debugLog('landingScreen', 'Auth state:', { isAuthenticated, isGuest, isRegularUser, isUnauthenticatedBrowsing, displayName: currentUser?.displayName });
 
-  // Get derived stats values from context
-  const displayStats = dailyScoresStats || { lowestScore: null, averageScore: null, totalPlayers: 0, playersWithLowestScore: 0 };
-  const usersWithBestScore = displayStats.playersWithLowestScore;
 
   return (
     <div className="landing-container app-fade-in">
@@ -347,7 +304,7 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
             </p>
             <button
               className="landing-stats-button"
-              onClick={handleOpenStatsModal}
+              onClick={() => setShowStatsModal(true)}
               disabled={authLoading}
             >
               🏆  Leaderboard
@@ -579,7 +536,7 @@ const LandingScreen: React.FC<LandingScreenProps> = () => {
       {/* Stats Modal */}
       <StatsModal
         isOpen={showStatsModal}
-        onClose={handleCloseStatsModal}
+        onClose={() => setShowStatsModal(false)}
         stats={null}
         onShareStats={handleShareStats}
         isLoading={false}

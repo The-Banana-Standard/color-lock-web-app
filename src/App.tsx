@@ -82,7 +82,6 @@ const GameContainer = () => {
     closeColorPicker,
     handleTryAgain,
     resetLostState,
-    handleHint,
     handleSettingsChange,
     getColorCSSWithSettings,
     getLockedRegionSize,
@@ -108,7 +107,6 @@ const GameContainer = () => {
     isCreatingGuestAccount,
     showBotSolutionModal,
     setShowBotSolutionModal,
-    navigateToHome,
     isLoadingStats
   } = useGameContext();
 
@@ -118,7 +116,6 @@ const GameContainer = () => {
     currentStep,
     tutorialBoard,
     isBoardFading,
-    waitingForUserAction,
     showTutorialModal,
     setShowTutorialModal,
     handleTileClick: handleTutorialTileClick,
@@ -167,14 +164,10 @@ const GameContainer = () => {
 
   // Show confetti when the game is solved
   useEffect(() => {
-    if (puzzle?.isSolved) {
-      setConfettiActive(true);
-      const timer = setTimeout(() => {
-        setConfettiActive(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
+    if (!puzzle?.isSolved) return;
+    setConfettiActive(true);
+    const timer = setTimeout(() => setConfettiActive(false), 5000);
+    return () => clearTimeout(timer);
   }, [puzzle?.isSolved]);
 
   // Handle home navigation - modify to use context
@@ -404,34 +397,16 @@ const GameContainer = () => {
           currentPickerColor = puzzle.grid[selectedTile.row][selectedTile.col];
         }
         
-        console.log("App: Tutorial color picker conditions:", {
-          showTutorialColorPicker,
-          suggestedTile,
-          selectedTile,
-          currentStep: isTutorialMode ? TutorialStep[currentStep] : 'N/A',
-          isTutorialMode,
-          shouldShow: showTutorialPicker,
-          currentPickerColor
-        });
-        
         return (showGamePicker || showTutorialPicker) && (
-          <ColorPickerModal 
+          <ColorPickerModal
             onSelect={(color) => {
-              console.log("DEBUG App: Color selected in modal:", color, 
-                "isTutorialMode:", isTutorialMode, 
-                "currentStep:", isTutorialMode ? TutorialStep[currentStep] : 'N/A',
-                "showTutorialPicker:", showTutorialPicker,
-                "showGamePicker:", showGamePicker);
               if (isTutorialMode) {
-                console.log("DEBUG App: Calling handleTutorialColorSelect");
                 handleTutorialColorSelect(color);
               } else {
-                console.log("DEBUG App: Calling regular handleColorSelect");
                 handleColorSelect(color);
               }
             }}
             onCancel={() => {
-              console.log("App: Color picker cancelled, isTutorialMode:", isTutorialMode);
               if (isTutorialMode) {
                 closeTutorialColorPicker();
               } else {

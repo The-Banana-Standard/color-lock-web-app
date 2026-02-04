@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, EmailAuthProvider, linkWithCredential, updateProfile } from 'firebase/auth';
 import { auth, deleteAccountCallable } from '../services/firebaseService';
 import { debugLog, LogLevel } from '../utils/debugUtils';
@@ -125,16 +125,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!auth) {
       throw new Error('Authentication service is not available');
     }
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      setCurrentUser(userCredential.user);
-      setIsAuthenticated(true);
-      setIsGuest(false);
-      localStorage.setItem('authPreference', 'user');
-      return userCredential.user;
-    } catch (error) {
-      throw error;
-    }
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    setCurrentUser(userCredential.user);
+    setIsAuthenticated(true);
+    setIsGuest(false);
+    localStorage.setItem('authPreference', 'user');
+    return userCredential.user;
   };
 
   const signUp = async (email: string, password: string, displayName: string): Promise<User> => {
@@ -198,15 +194,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!auth) {
       throw new Error('Authentication service is not available');
     }
-    try {
-      await signOut(auth);
-      setCurrentUser(null);
-      setIsAuthenticated(false);
-      setIsGuest(false);
-      localStorage.removeItem('authPreference');
-    } catch (error) {
-      throw error;
-    }
+    await signOut(auth);
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setIsGuest(false);
+    localStorage.removeItem('authPreference');
   };
 
   const deleteAccount = async (email: string, password: string): Promise<void> => {

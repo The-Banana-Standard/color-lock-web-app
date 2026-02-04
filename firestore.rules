@@ -81,17 +81,26 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Best Scores - PUBLIC READ for educational/competitive feature
+    // Best Scores - AUTH READ for educational/competitive feature
     // SECURITY MODEL:
-    // - Public read shows optimal solutions for puzzles (educational value)
+    // - Authenticated read shows optimal solutions for puzzles (educational value)
     // - Contains user ID and display name of top scorer (users opt-in via achievement)
-    // - App Check required: prevents bot/script abuse while allowing unauthenticated users
     // - Backend-only writes via Admin SDK
     match /bestScores/{docId} {
-      allow read: if hasValidAppCheck();
+      allow read: if isAuthenticated();
       allow write: if false;
     }
-    
+
+    // Weekly Hardest Puzzle - AUTH READ for competitive feature
+    // SECURITY MODEL:
+    // - Authenticated read shows the hardest puzzle of the week
+    // - Contains puzzle ID, difficulty, and anonymized stats (no PII)
+    // - Backend-only writes via scheduled Cloud Function
+    match /weeklyHardest/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
     // DENY ALL other paths by default - security fallback
     match /{document=**} {
       allow read, write: if false;
