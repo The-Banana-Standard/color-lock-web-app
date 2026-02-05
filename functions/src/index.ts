@@ -1883,7 +1883,7 @@ export const sendDailyPuzzleReminders = onSchedule(
                         }
                     } else {
                         // No history, treat as Case B
-                        notificationTitle = "Colo Lock Daily Puzzle";
+                        notificationTitle = "Color Lock Daily Puzzle";
                         notificationBody = `It looks like you haven't completed today's Color Lock. Join the ${todaysTotalPlayers} players who have solved today's puzzle!`;
                         logger.info(`sendDailyPuzzleReminders: User ${userId} has no puzzle history`);
                     }
@@ -2676,9 +2676,12 @@ export const getUsageStats = onCall(
 
             logger.info(`getUsageStats: Returning ${finalStats.length} entries, ${totalUniqueUsers} total unique users, ${totalAttempts} total attempts`);
 
+            // Strip userIds from response — needed server-side for dedup but not by the client
+            const sanitizedStats = finalStats.map(({ userIds: _userIds, ...rest }) => rest);
+
             return {
                 success: true,
-                stats: finalStats,
+                stats: sanitizedStats,
                 count: finalStats.length,
                 totalUniqueUsers,
                 totalAttempts,
