@@ -39,7 +39,7 @@ export enum LogLevel {
 export const debugLog = (
   component: keyof typeof DEBUG_COMPONENTS,
   message: string,
-  data?: any,
+  data?: unknown,
   level: LogLevel = LogLevel.INFO
 ): void => {
   if (!ENABLE_DEBUG_LOGGING || !DEBUG_COMPONENTS[component]) {

@@ -51,7 +51,7 @@ if (isFirebaseConfigValid) {
   // Set up debug token for local development
   if (useEmulators) {
     // IMPORTANT: Set the debug token flag *before* initializing App Check
-    (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true;
+    (window as unknown as Record<string, unknown>).FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true;
     console.log('App Check debug token flag set for localhost.');
   }
 

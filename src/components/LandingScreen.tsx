@@ -36,9 +36,9 @@ const LandingScreen: React.FC = () => {
   // --- Calculate total players across all difficulties ---
   const totalPlayersToday = (() => {
     if (!dailyScoresV2Stats) return 0;
-    const easy = (dailyScoresV2Stats as any).easy?.totalPlayers ?? 0;
-    const medium = (dailyScoresV2Stats as any).medium?.totalPlayers ?? 0;
-    const hard = (dailyScoresV2Stats as any).hard?.totalPlayers ?? 0;
+    const easy = dailyScoresV2Stats?.easy?.totalPlayers ?? 0;
+    const medium = dailyScoresV2Stats?.medium?.totalPlayers ?? 0;
+    const hard = dailyScoresV2Stats?.hard?.totalPlayers ?? 0;
     return easy + medium + hard;
   })();
 
@@ -62,9 +62,7 @@ const LandingScreen: React.FC = () => {
   };
 
   // Current per-difficulty stats for selected difficulty
-  const currentV2Stats = (dailyScoresV2Stats as any)?.[currentDifficulty] as
-    | { lowestScore: number | null; averageScore: number | null }
-    | undefined;
+  const currentV2Stats = dailyScoresV2Stats?.[currentDifficulty];
   const currentBestScore = currentV2Stats?.lowestScore ?? null;
   const currentAverageScore = currentV2Stats?.averageScore ?? null;
 
@@ -122,9 +120,9 @@ const LandingScreen: React.FC = () => {
       }
       setShowAuthModal(false);
       setTimeout(() => setShowLandingPage(false), 500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Authentication error:', err);
-      setAuthError(err.message || 'An error occurred during authentication');
+      setAuthError(err instanceof Error ? err.message : 'An error occurred during authentication');
     } finally {
       setAuthLoading(false);
     }
@@ -148,16 +146,17 @@ const LandingScreen: React.FC = () => {
       }
       await sendPasswordResetEmail(auth, email);
       setAuthSuccess('Password reset email sent! Check your inbox.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Password reset error:', err);
-      if (err.code === 'auth/user-not-found') {
+      const code = err && typeof err === 'object' && 'code' in err ? (err as { code: string }).code : '';
+      if (code === 'auth/user-not-found') {
         setAuthError('No account found with this email address');
-      } else if (err.code === 'auth/invalid-email') {
+      } else if (code === 'auth/invalid-email') {
         setAuthError('Please enter a valid email address');
-      } else if (err.code === 'auth/too-many-requests') {
+      } else if (code === 'auth/too-many-requests') {
         setAuthError('Too many requests. Please try again later.');
       } else {
-        setAuthError(err.message || 'Failed to send password reset email');
+        setAuthError(err instanceof Error ? err.message : 'Failed to send password reset email');
       }
     } finally {
       setAuthLoading(false);
@@ -182,10 +181,11 @@ const LandingScreen: React.FC = () => {
               setAuthError('Authentication succeeded but failed to initialize user. Please refresh.');
           }
       }, 100);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Guest mode error:', err);
       clearTimeout(safetyTimeout);
-      setAuthError(err.message || (err.code ? `Error code: ${err.code}` : 'An error occurred while entering guest mode'));
+      const message = err instanceof Error ? err.message : 'An error occurred while entering guest mode';
+      setAuthError(message);
       setAuthLoading(false);
     }
   };
@@ -195,9 +195,9 @@ const LandingScreen: React.FC = () => {
     setAuthLoading(true);
     try {
       await logOut();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Sign out error:', err);
-      setAuthError(err.message || 'An error occurred while signing out');
+      setAuthError(err instanceof Error ? err.message : 'An error occurred while signing out');
     } finally {
       setAuthLoading(false);
     }

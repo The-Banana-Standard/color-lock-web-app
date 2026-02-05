@@ -11,46 +11,41 @@
 
 ## Active Tasks
 
-### strip-userids-from-usage-stats
-**Task**: Strip userIds from getUsageStats response
-**Priority**: 3 of 15
-**Stage**: VERIFY
+### type-safety-improvements
+**Task**: Type safety improvements (replace `any` types)
+**Priority**: 9 of 15
+**Stage**: RESEARCH
 **Pipeline**: code-workflow
 **Started**: 2026-02-05
-**Issue**: High: exposes all player UIDs to any caller
+**Issue**: Medium: 56 `any` usages weaken type checking
 **Attempts**: 0
-**Files**:
-- MOD: functions/src/index.ts
-- MOD: src/services/firebaseService.ts
-- NEW: functions/src/__tests__/stripUserIds.test.ts
-- NEW: src/services/firebaseService.test.ts
+**Files**: TBD
 **Quality Scores**:
 | Stage | Score | Attempts | Status |
 |-------|-------|----------|--------|
-| RESEARCH | 9.1 | 1 | PASS |
-| PLAN | 9.0 | 1 | PASS |
-| IMPLEMENT | 9.0 | 1 | PASS |
-| WRITE-TESTS | 9.3 | 1 | PASS |
-| SIMPLIFY | - | - | SKIP |
-| VERIFY | - | 0 | CURRENT |
+| RESEARCH | - | 0 | CURRENT |
 
 ### parallelize-datacache-fetches
 **Task**: Parallelize DataCacheContext fetches
 **Priority**: 4 of 15
-**Stage**: WRITE-TESTS
+**Stage**: REVIEW
 **Pipeline**: code-workflow
 **Started**: 2026-02-05
 **Issue**: High: 6 sequential API calls on load
 **Attempts**: 0
 **Files**:
 - MOD: src/contexts/DataCacheContext.tsx
+- NEW: src/contexts/__tests__/DataCacheContext.test.tsx
 **Quality Scores**:
 | Stage | Score | Attempts | Status |
 |-------|-------|----------|--------|
 | RESEARCH | 9.8 | 1 | PASS |
 | PLAN | 9.1 | 1 | PASS |
 | IMPLEMENT | 9.8 | 1 | PASS |
-| WRITE-TESTS | - | 0 | CURRENT |
+| WRITE-TESTS | 9.3 | 1 | PASS |
+| SIMPLIFY | 9.0 | 1 | PASS |
+| VERIFY | 9.0 | 1 | PASS |
+| REVIEW | - | 0 | CURRENT |
 
 ---
 
@@ -58,7 +53,7 @@
 
 | # | Task | Impact | Effort | Priority | Source |
 |---|------|--------|--------|----------|--------|
-| 9 | Type safety improvements (replace `any` types) | 5 | S | 5.0 | Medium: 56 `any` usages weaken type checking |
+| ~~9~~ | ~~Type safety improvements (replace `any` types)~~ | - | - | - | Completed: 0 `any` in non-test src |
 | 11 | Pre-compute leaderboard snapshots | 8 | M | 2.7 | High: full collection group scan per request |
 | ~~12~~ | ~~Extract shared types between frontend/functions~~ | - | - | - | Completed |
 | ~~13~~ | ~~Complete CRA-to-Vite migration cleanup~~ | - | - | - | Completed |
@@ -95,6 +90,8 @@
 - [x] Fix functions npm audit vulnerabilities — 9→3 remaining (2026-02-05, audit)
 - [x] Complete CRA-to-Vite migration cleanup — removed CRA artifacts, 3 unused deps (2026-02-05, audit)
 - [x] Extract shared types to shared/ directory — functions no longer import from ../../src/types (2026-02-05, audit)
+- [x] Strip userIds from getUsageStats response — defense-in-depth, remove UIDs from API response (2026-02-05, audit)
+- [x] Type safety improvements — eliminated all `any` types from non-test source (0 remaining) (2026-02-05, audit)
 
 ## Deferred
 

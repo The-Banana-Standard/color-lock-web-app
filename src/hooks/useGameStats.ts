@@ -76,7 +76,7 @@ export default function useGameStats(initialDefaultStats: GameStatistics) {
   const generateShareableStats = useCallback(() => {
     // Read directly from the gameStats object (flattened structure)
     const safeNum = (val: number | null | undefined) => (typeof val === 'number' && !isNaN(val) ? val : 0);
-    const safeArrLen = (val: any) => (Array.isArray(val) ? val.length : 0);
+    const safeArrLen = (val: unknown) => (Array.isArray(val) ? val.length : 0);
     const todayKey = dateKeyForToday();
 
     let shareText = `🔒 Color Lock Stats 🔒\n\n`;

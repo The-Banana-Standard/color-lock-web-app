@@ -23,6 +23,31 @@ import { useAuth } from './AuthContext';
 import { useDataCache } from './DataCacheContext'; // Import the cache context hook
 import { debugLog } from '../utils/debugUtils';
 
+interface RecordPuzzlePayload {
+  puzzle_id: string;
+  difficulty: DifficultyLevel;
+  attemptNumber: number;
+  moves: number;
+  hintUsed: boolean;
+  botMoves: number;
+  win_loss: 'win' | 'loss';
+  states: PuzzleGrid[];
+  actions: number[];
+  targetColor: TileColor;
+  colorMap?: number[];
+}
+
+interface WinModalStatsResponse {
+  success: boolean;
+  stats?: {
+    totalAttempts: number;
+    currentPuzzleCompletedStreak: number;
+    currentTieBotStreak: number;
+    currentFirstTryStreak: number;
+  };
+  error?: string;
+}
+
 // Interface for the context value
 interface GameContextValue {
   // State
@@ -234,16 +259,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   }, []);
 
   // --- Utility Function: Record completed puzzle history ---
-  const recordPuzzleHistory = useCallback(async (payload: any) => {
+  const recordPuzzleHistory = useCallback(async (payload: RecordPuzzlePayload) => {
     try {
       const result = await recordPuzzleHistoryCallable(payload);
       if (!result.data?.success) {
         const errMsg = result.data?.error || 'Unknown backend error';
         setErrorWithAutoDismiss(`Failed to record puzzle history: ${errMsg}`, { autoDismiss: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error calling recordPuzzleHistory:', error);
-      const message = error.code ? `(${error.code}) ${error.message}` : error.message || 'Unknown error';
+      const code = error && typeof error === 'object' && 'code' in error ? (error as { code: string }).code : '';
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      const message = code ? `(${code}) ${msg}` : msg;
       setErrorWithAutoDismiss(`Failed to record puzzle history: ${message}`, { autoDismiss: true });
     }
   }, []);
@@ -279,9 +306,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         } else {
             throw new Error(result.data.error || 'Failed to fetch user stats');
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error fetching user stats:", error);
-        setErrorWithAutoDismiss(error.message || 'Failed to load user stats', { autoDismiss: true });
+        setErrorWithAutoDismiss(error instanceof Error ? error.message : 'Failed to load user stats', { autoDismiss: true });
         setFreshStats({...defaultStats});
     } finally {
         setIsLoadingStats(false);
@@ -415,15 +442,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         } else {
           throw new Error(result.data.error || 'Failed to fetch puzzle data');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching puzzle:', err);
-        let errMsg = err.message || String(err);
+        const code = err && typeof err === 'object' && 'code' in err ? (err as { code: string }).code : '';
+        let errMsg = err instanceof Error ? err.message : String(err);
         // Map Firebase error codes to user-friendly messages
-        if (err.code === 'auth/unauthenticated') {
+        if (code === 'auth/unauthenticated') {
              errMsg = 'Authentication failed. Please log in or play as guest.';
-        } else if (err.code === 'auth/not-found' || err.code === 'not-found' || err.code === 'functions/not-found') {
+        } else if (code === 'auth/not-found' || code === 'not-found' || code === 'functions/not-found') {
              errMsg = `Today's puzzle (${DATE_TO_USE}) is not available yet. Please check back later.`;
-        } else if (err.code === 'failed-precondition') {
+        } else if (code === 'failed-precondition') {
              errMsg = 'App verification failed. Please ensure your app is registered and up-to-date.';
         } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
              errMsg = 'Local dev: Failed to load puzzle. Check emulators.';
@@ -969,7 +997,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       // 4. Fetch fresh stats from backend in the background to get accurate streaks
       getWinModalStatsCallable({ puzzleId: solvedPuzzle.dateString, difficulty: settings.difficultyLevel })
         .then(resp => {
-          const data = resp.data as any;
+          const data = resp.data as WinModalStatsResponse;
           if (data?.success && data?.stats) {
             console.log('GameContext: Updating win modal stats with fresh data from backend.');
             setWinModalStats(prev => ({
@@ -1277,7 +1305,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         // 8. Fetch fresh stats from backend in the background to get accurate streaks
         getWinModalStatsCallable({ puzzleId: completedPuzzle.dateString, difficulty: settings.difficultyLevel })
           .then(resp => {
-            const data = resp.data as any;
+            const data = resp.data as WinModalStatsResponse;
             if (data?.success && data?.stats) {
               console.log('GameContext: Updating win modal stats with fresh data from backend (autocomplete).');
               setWinModalStats(prev => ({

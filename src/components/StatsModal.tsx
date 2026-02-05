@@ -18,6 +18,26 @@ interface LeaderboardEntryV2 {
   isCurrent?: boolean;
 }
 
+interface PersonalStats {
+  today: {
+    bestEloScore: number | null;
+    totalAttempts: number | null;
+    fewestMoves: number | null;
+    bestDifficultyEloScore: number | null;
+    attemptsToTieGoal: number | null;
+    attemptsToBeatGoal: number | null;
+  };
+  allTime: {
+    currentPuzzleStreak: number | null;
+    currentGoalStreak: number | null;
+    currentFirstTryStreak: number | null;
+    gamesPlayed: number | null;
+    puzzlesSolved: number | null;
+    totalMoves: number | null;
+  };
+  difficulty: string;
+}
+
 interface StatsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -50,7 +70,7 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
   const [isWebShareSupported, setIsWebShareSupported] = useState<boolean>(false);
   
   // Personal stats state
-  const [personalStats, setPersonalStats] = useState<any>(null);
+  const [personalStats, setPersonalStats] = useState<PersonalStats | null>(null);
   const [isLoadingNewPersonalStats, setIsLoadingNewPersonalStats] = useState<boolean>(false);
   const [personalStatsError, setPersonalStatsError] = useState<string | null>(null);
   
@@ -96,8 +116,8 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
         } else {
           throw new Error(result.data.error || 'Failed to fetch personal stats');
         }
-      } catch (error: any) {
-        setPersonalStatsError(error.message || 'Could not load personal stats.');
+      } catch (error: unknown) {
+        setPersonalStatsError(error instanceof Error ? error.message : 'Could not load personal stats.');
       } finally {
         setIsLoadingNewPersonalStats(false);
       }
@@ -134,8 +154,8 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
         } else {
           throw new Error(result.data.error || 'Failed to fetch leaderboard');
         }
-      } catch (error: any) {
-        setLeaderboardV2Error(error.message || 'Could not load leaderboard data.');
+      } catch (error: unknown) {
+        setLeaderboardV2Error(error instanceof Error ? error.message : 'Could not load leaderboard data.');
       } finally {
         setIsLoadingLeaderboardV2(false);
       }
@@ -211,8 +231,8 @@ const StatsModal: React.FC<StatsModalProps> = memo(({
   const getFormattedShareText = useCallback(() => {
     // Use the generateShareableStats function from the useGameStats hook
     // This ensures consistency between the modal display and shared text
-    const safeNum = (val: any) => (typeof val === 'number' && !isNaN(val) ? val : 0);
-    const safeArrLen = (val: any) => (Array.isArray(val) ? val.length : 0);
+    const safeNum = (val: unknown) => (typeof val === 'number' && !isNaN(val) ? val : 0);
+    const safeArrLen = (val: unknown) => (Array.isArray(val) ? val.length : 0);
 
     let shareText = `🔒 Color Lock Stats 🔒\n\n`;
     shareText += `Today's Game (${todayKey}):\n`;

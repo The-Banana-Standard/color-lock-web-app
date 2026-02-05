@@ -231,8 +231,8 @@ const UsageStatsScreen: React.FC = () => {
         } else {
           throw new Error(result.data.error || 'Failed to fetch usage stats');
         }
-      } catch (err: any) {
-        setError(err.message || 'An error occurred while fetching usage statistics');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching usage statistics');
       } finally {
         setLoading(false);
       }

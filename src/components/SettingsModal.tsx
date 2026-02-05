@@ -40,7 +40,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   // Handle select changes (for color blind modes)
-  const handleSelectChange = (key: keyof AppSettings, value: any) => {
+  const handleSelectChange = (key: keyof AppSettings, value: AppSettings[keyof AppSettings]) => {
     setLocalSettings(prev => ({
       ...prev,
       [key]: value

@@ -72,9 +72,9 @@ const SignUpButton: React.FC<SignUpButtonProps> = ({ onClose }) => {
         window.location.reload();
       }, 2000);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Sign up error:', err);
-      setError(err.message || 'An error occurred during sign up');
+      setError(err instanceof Error ? err.message : 'An error occurred during sign up');
     } finally {
       setLoading(false);
     }

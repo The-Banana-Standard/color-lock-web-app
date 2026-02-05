@@ -177,13 +177,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           localStorage.setItem('authPreference', 'user');
           return userCredential.user; // Return the user object
 
-      } catch (error: any) {
+      } catch (error: unknown) {
           debugLog('authContext', 'Sign Up Error:', error, LogLevel.ERROR);
-          if (error.code === 'auth/credential-already-in-use') {
+          const code = error && typeof error === 'object' && 'code' in error ? (error as { code: string }).code : '';
+          if (code === 'auth/credential-already-in-use') {
               throw new Error("This email address is already associated with an account. Please sign in or use a different email.");
-          } else if (error.code === 'auth/email-already-in-use') {
+          } else if (code === 'auth/email-already-in-use') {
               throw new Error("This email address is already registered. Please sign in.");
-          } else if (error.code === 'auth/provider-already-linked') {
+          } else if (code === 'auth/provider-already-linked') {
               throw new Error("This guest account is already linked to an email.");
           }
           throw error;
@@ -237,16 +238,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         throw new Error(result.data.error || 'Failed to delete account');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       debugLog('authContext', 'Delete account error:', error, LogLevel.ERROR);
 
-      // Extract error message from Firebase Functions error
-      if (error.code === 'functions/invalid-argument') {
-        throw new Error(error.message || 'Invalid email or password');
-      } else if (error.code === 'functions/unauthenticated') {
+      const code = error && typeof error === 'object' && 'code' in error ? (error as { code: string }).code : '';
+      const message = error instanceof Error ? error.message : '';
+      if (code === 'functions/invalid-argument') {
+        throw new Error(message || 'Invalid email or password');
+      } else if (code === 'functions/unauthenticated') {
         throw new Error('You must be signed in to delete your account');
-      } else if (error.code === 'functions/failed-precondition') {
-        throw new Error(error.message || 'Account deletion is not available for this account type');
+      } else if (code === 'functions/failed-precondition') {
+        throw new Error(message || 'Account deletion is not available for this account type');
       }
 
       throw error;

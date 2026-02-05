@@ -126,64 +126,87 @@ export const DataCacheProvider: React.FC<DataCacheProviderProps> = ({ children }
 
         const today = dateKeyForToday();
 
-        // --- 1. Fetch Daily Scores V2 Stats (per difficulty) ---
-        setLoadingStates(prev => ({ ...prev, dailyScores: true }));
-        setErrorStates(prev => ({ ...prev, dailyScores: null }));
-        try {
-            console.log("DataCacheContext: Fetching Daily Scores V2 Stats (per difficulty)...");
-            const result = await getDailyScoresV2StatsCallable({ puzzleId: today });
-            if (result.data.success && result.data.stats) {
-                setDailyScoresV2Stats(result.data.stats as DailyScoresV2Stats);
-                console.log("DataCacheContext: Daily Scores V2 Stats fetched successfully.");
-            } else {
-                throw new Error(result.data.error || 'Failed to fetch daily scores V2 stats');
+        // --- Step 1: Batch all loading/error state resets upfront ---
+        setLoadingStates(prev => ({
+            ...prev,
+            dailyScores: true,
+            puzzle: true,
+            leaderboard: true,
+            ...(currentUser ? { userStats: true, winModalStats: true } : {}),
+        }));
+        setErrorStates(prev => ({
+            ...prev,
+            dailyScores: null,
+            puzzle: null,
+            leaderboard: null,
+            ...(currentUser ? { userStats: null, winModalStats: null } : {}),
+        }));
+
+        // --- Step 2: Define each fetch as a self-contained async function ---
+
+        // 1. Fetch Daily Scores V2 Stats (per difficulty)
+        const fetchDailyScoresV2 = async () => {
+            try {
+                console.log("DataCacheContext: Fetching Daily Scores V2 Stats (per difficulty)...");
+                const result = await getDailyScoresV2StatsCallable({ puzzleId: today });
+                if (result.data.success && result.data.stats) {
+                    setDailyScoresV2Stats(result.data.stats as DailyScoresV2Stats);
+                    console.log("DataCacheContext: Daily Scores V2 Stats fetched successfully.");
+                } else {
+                    throw new Error(result.data.error || 'Failed to fetch daily scores V2 stats');
+                }
+            } catch (error: unknown) {
+                console.error("DataCacheContext: Error fetching daily scores V2 stats:", error);
+                setErrorStates(prev => ({ ...prev, dailyScores: error instanceof Error ? error.message : 'Failed to load daily stats' }));
+            } finally {
+                setLoadingStates(prev => ({ ...prev, dailyScores: false }));
             }
-        } catch (error: any) {
-            console.error("DataCacheContext: Error fetching daily scores V2 stats:", error);
-            setErrorStates(prev => ({ ...prev, dailyScores: error.message || 'Failed to load daily stats' }));
-        } finally {
-            setLoadingStates(prev => ({ ...prev, dailyScores: false }));
-        }
+        };
 
-        // --- 2. Fetch Puzzle Data V2 (all difficulties) ---
-        setLoadingStates(prev => ({ ...prev, puzzle: true }));
-        setErrorStates(prev => ({ ...prev, puzzle: null }));
-        try {
-            console.log("DataCacheContext: Fetching Puzzle Data V2 (all difficulties)...");
-            const result = await fetchPuzzleV2Callable({ date: today });
-            if (result.data.success && result.data.data) {
-                setPuzzleDataV2(result.data.data);
-                console.log("DataCacheContext: Puzzle Data V2 fetched successfully.");
-                console.log("DataCacheContext: Puzzle Data V2:", result.data.data);
-            } else {
-                throw new Error(result.data.error || 'Failed to fetch puzzle data');
+        // 2. Fetch Puzzle Data V2 (all difficulties)
+        const fetchPuzzleDataV2 = async () => {
+            try {
+                console.log("DataCacheContext: Fetching Puzzle Data V2 (all difficulties)...");
+                const result = await fetchPuzzleV2Callable({ date: today });
+                if (result.data.success && result.data.data) {
+                    setPuzzleDataV2(result.data.data);
+                    console.log("DataCacheContext: Puzzle Data V2 fetched successfully.");
+                    console.log("DataCacheContext: Puzzle Data V2:", result.data.data);
+                } else {
+                    throw new Error(result.data.error || 'Failed to fetch puzzle data');
+                }
+            } catch (error: unknown) {
+                console.error("DataCacheContext: Error fetching puzzle data V2:", error);
+                setErrorStates(prev => ({ ...prev, puzzle: error instanceof Error ? error.message : 'Failed to load puzzle' }));
+            } finally {
+                setLoadingStates(prev => ({ ...prev, puzzle: false }));
             }
-        } catch (error: any) {
-            console.error("DataCacheContext: Error fetching puzzle data V2:", error);
-            setErrorStates(prev => ({ ...prev, puzzle: error.message || 'Failed to load puzzle' }));
-        } finally {
-            setLoadingStates(prev => ({ ...prev, puzzle: false }));
-        }
+        };
 
-        // --- 2.5. Fetch Best Scores for today (all difficulties in parallel) ---
-        try {
-            console.log("DataCacheContext: Fetching Best Scores for today...");
-            const [easyBest, mediumBest, hardBest] = await Promise.all([
-                getBestScoreForPuzzle(today, 'easy'),
-                getBestScoreForPuzzle(today, 'medium'),
-                getBestScoreForPuzzle(today, 'hard')
-            ]);
-            setBestScoresForDay({ easy: easyBest, medium: mediumBest, hard: hardBest });
-            console.log("DataCacheContext: Best Scores fetched:", { easy: easyBest, medium: mediumBest, hard: hardBest });
-        } catch (error: any) {
-            console.warn("DataCacheContext: Error fetching best scores (non-critical):", error);
-            // Best scores are non-critical, so we don't set an error state
-        }
+        // 2.5. Fetch Best Scores for today (all difficulties in parallel)
+        const fetchBestScores = async () => {
+            try {
+                console.log("DataCacheContext: Fetching Best Scores for today...");
+                const [easyBest, mediumBest, hardBest] = await Promise.all([
+                    getBestScoreForPuzzle(today, 'easy'),
+                    getBestScoreForPuzzle(today, 'medium'),
+                    getBestScoreForPuzzle(today, 'hard')
+                ]);
+                setBestScoresForDay({ easy: easyBest, medium: mediumBest, hard: hardBest });
+                console.log("DataCacheContext: Best Scores fetched:", { easy: easyBest, medium: mediumBest, hard: hardBest });
+            } catch (error: unknown) {
+                console.warn("DataCacheContext: Error fetching best scores (non-critical):", error);
+                // Best scores are non-critical, so we don't set an error state
+            }
+        };
 
-        // --- 3. Fetch Personal Stats (for any authenticated user, including guests) ---
-        if (currentUser) {
-            setLoadingStates(prev => ({ ...prev, userStats: true }));
-            setErrorStates(prev => ({ ...prev, userStats: null }));
+        // 3. Fetch Personal Stats (for any authenticated user, including guests)
+        const fetchPersonalStats = async () => {
+            if (!currentUser) {
+                console.log("DataCacheContext: Skipping user stats fetch (no user logged in).");
+                setUserStats(null); // Ensure userStats is null if not fetched
+                return;
+            }
             try {
                 console.log("DataCacheContext: Fetching Personal Stats...");
                 const result = await getPersonalStatsCallable({
@@ -202,21 +225,28 @@ export const DataCacheProvider: React.FC<DataCacheProviderProps> = ({ children }
                          throw new Error(result.data.error || 'Failed to fetch user stats');
                     }
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error("DataCacheContext: Error fetching user stats:", error);
-                setErrorStates(prev => ({ ...prev, userStats: error.message || 'Failed to load user stats' }));
+                setErrorStates(prev => ({ ...prev, userStats: error instanceof Error ? error.message : 'Failed to load user stats' }));
             } finally {
                 setLoadingStates(prev => ({ ...prev, userStats: false }));
             }
-        } else {
-             console.log("DataCacheContext: Skipping user stats fetch (no user logged in).");
-             setUserStats(null); // Ensure userStats is null if not fetched
-        }
+        };
 
-        // --- 3.5. Fetch Win Modal Stats (for authenticated users only) ---
-        if (currentUser) {
-            setLoadingStates(prev => ({ ...prev, winModalStats: true }));
-            setErrorStates(prev => ({ ...prev, winModalStats: null }));
+        // 3.5. Fetch Win Modal Stats (for authenticated users only)
+        const fetchWinModalStats = async () => {
+            if (!currentUser) {
+                console.log("DataCacheContext: Skipping win modal stats fetch (no user logged in).");
+                setWinModalStats(null);
+                return;
+            }
+            const emptyWinModalStats: WinModalStats = {
+                totalAttempts: null,
+                currentPuzzleCompletedStreak: null,
+                currentTieBotStreak: null,
+                currentFirstTryStreak: null,
+                difficulty: settings.difficultyLevel,
+            };
             try {
                 console.log("DataCacheContext: Fetching Win Modal Stats...");
                 const result = await getWinModalStatsCallable({
@@ -235,54 +265,48 @@ export const DataCacheProvider: React.FC<DataCacheProviderProps> = ({ children }
                 } else {
                     // If stats don't exist yet, use null values
                     console.log("DataCacheContext: No win modal stats found for user, using null values.");
-                    setWinModalStats({
-                        totalAttempts: null,
-                        currentPuzzleCompletedStreak: null,
-                        currentTieBotStreak: null,
-                        currentFirstTryStreak: null,
-                        difficulty: settings.difficultyLevel,
-                    });
+                    setWinModalStats(emptyWinModalStats);
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error("DataCacheContext: Error fetching win modal stats:", error);
-                setErrorStates(prev => ({ ...prev, winModalStats: error.message || 'Failed to load win modal stats' }));
-                // Set null values on error
-                setWinModalStats({
-                    totalAttempts: null,
-                    currentPuzzleCompletedStreak: null,
-                    currentTieBotStreak: null,
-                    currentFirstTryStreak: null,
-                    difficulty: settings.difficultyLevel,
-                });
+                setErrorStates(prev => ({ ...prev, winModalStats: error instanceof Error ? error.message : 'Failed to load win modal stats' }));
+                setWinModalStats(emptyWinModalStats);
             } finally {
                 setLoadingStates(prev => ({ ...prev, winModalStats: false }));
             }
-        } else {
-            console.log("DataCacheContext: Skipping win modal stats fetch (no user logged in).");
-            setWinModalStats(null);
-        }
+        };
 
-        // --- 4. Fetch Global Leaderboard V2 (Score - All Time) ---
-        setLoadingStates(prev => ({ ...prev, leaderboard: true }));
-        setErrorStates(prev => ({ ...prev, leaderboard: null }));
-        try {
-            console.log("DataCacheContext: Fetching Global Leaderboard V2 (Score - All Time)...");
-            const result = await getGlobalLeaderboardV2Callable({
-                category: 'score',
-                subcategory: 'allTime'
-            });
-            if (result.data.success && result.data.leaderboard) {
-                setGlobalLeaderboard(result.data.leaderboard);
-                console.log("DataCacheContext: Global Leaderboard V2 fetched successfully.");
-            } else {
-                throw new Error(result.data.error || 'Failed to fetch global leaderboard');
+        // 4. Fetch Global Leaderboard V2 (Score - All Time)
+        const fetchLeaderboard = async () => {
+            try {
+                console.log("DataCacheContext: Fetching Global Leaderboard V2 (Score - All Time)...");
+                const result = await getGlobalLeaderboardV2Callable({
+                    category: 'score',
+                    subcategory: 'allTime'
+                });
+                if (result.data.success && result.data.leaderboard) {
+                    setGlobalLeaderboard(result.data.leaderboard);
+                    console.log("DataCacheContext: Global Leaderboard V2 fetched successfully.");
+                } else {
+                    throw new Error(result.data.error || 'Failed to fetch global leaderboard');
+                }
+            } catch (error: unknown) {
+                console.error("DataCacheContext: Error fetching global leaderboard V2:", error);
+                setErrorStates(prev => ({ ...prev, leaderboard: error instanceof Error ? error.message : 'Failed to load leaderboard' }));
+            } finally {
+                setLoadingStates(prev => ({ ...prev, leaderboard: false }));
             }
-        } catch (error: any) {
-            console.error("DataCacheContext: Error fetching global leaderboard V2:", error);
-            setErrorStates(prev => ({ ...prev, leaderboard: error.message || 'Failed to load leaderboard' }));
-        } finally {
-            setLoadingStates(prev => ({ ...prev, leaderboard: false }));
-        }
+        };
+
+        // --- Step 3: Execute all fetches in parallel ---
+        await Promise.all([
+            fetchDailyScoresV2(),
+            fetchPuzzleDataV2(),
+            fetchBestScores(),
+            fetchPersonalStats(),
+            fetchWinModalStats(),
+            fetchLeaderboard(),
+        ]);
 
         console.log("DataCacheContext: Initial data fetch sequence complete.");
         setIsInitialFetchDone(true);

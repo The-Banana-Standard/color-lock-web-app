@@ -30,8 +30,8 @@ const DeleteAccountPage: React.FC = () => {
       setPageState('form');
       // Clear password after sign-in for security
       setPassword('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to sign in. Please check your credentials.');
     } finally {
       setIsSigningIn(false);
     }
@@ -58,8 +58,8 @@ const DeleteAccountPage: React.FC = () => {
     try {
       await deleteAccount(email, password);
       setPageState('success');
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete account. Please try again.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete account. Please try again.');
     } finally {
       setIsLoading(false);
     }
