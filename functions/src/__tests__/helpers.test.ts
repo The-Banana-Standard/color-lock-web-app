@@ -1,4 +1,4 @@
-import { DifficultyLevel } from '../../../src/types/settings';
+import { DifficultyLevel } from '../../../shared/types';
 import { normalizeDifficulty, isDayAfter } from '../index';
 import { calculateEloAttemptPenalty } from '../eloUtils';
 

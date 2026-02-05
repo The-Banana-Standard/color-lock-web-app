@@ -14,7 +14,7 @@
 ### strip-userids-from-usage-stats
 **Task**: Strip userIds from getUsageStats response
 **Priority**: 3 of 15
-**Stage**: IMPLEMENT
+**Stage**: VERIFY
 **Pipeline**: code-workflow
 **Started**: 2026-02-05
 **Issue**: High: exposes all player UIDs to any caller
@@ -22,17 +22,22 @@
 **Files**:
 - MOD: functions/src/index.ts
 - MOD: src/services/firebaseService.ts
+- NEW: functions/src/__tests__/stripUserIds.test.ts
+- NEW: src/services/firebaseService.test.ts
 **Quality Scores**:
 | Stage | Score | Attempts | Status |
 |-------|-------|----------|--------|
 | RESEARCH | 9.1 | 1 | PASS |
 | PLAN | 9.0 | 1 | PASS |
-| IMPLEMENT | - | 0 | CURRENT |
+| IMPLEMENT | 9.0 | 1 | PASS |
+| WRITE-TESTS | 9.3 | 1 | PASS |
+| SIMPLIFY | - | - | SKIP |
+| VERIFY | - | 0 | CURRENT |
 
 ### parallelize-datacache-fetches
 **Task**: Parallelize DataCacheContext fetches
 **Priority**: 4 of 15
-**Stage**: IMPLEMENT
+**Stage**: WRITE-TESTS
 **Pipeline**: code-workflow
 **Started**: 2026-02-05
 **Issue**: High: 6 sequential API calls on load
@@ -44,7 +49,8 @@
 |-------|-------|----------|--------|
 | RESEARCH | 9.8 | 1 | PASS |
 | PLAN | 9.1 | 1 | PASS |
-| IMPLEMENT | - | 0 | CURRENT |
+| IMPLEMENT | 9.8 | 1 | PASS |
+| WRITE-TESTS | - | 0 | CURRENT |
 
 ---
 
@@ -54,10 +60,10 @@
 |---|------|--------|--------|----------|--------|
 | 9 | Type safety improvements (replace `any` types) | 5 | S | 5.0 | Medium: 56 `any` usages weaken type checking |
 | 11 | Pre-compute leaderboard snapshots | 8 | M | 2.7 | High: full collection group scan per request |
-| 12 | Extract shared types between frontend/functions | 5 | S | 5.0 | Medium: functions import from ../../src/types |
-| 13 | Complete CRA-to-Vite migration cleanup | 4 | S | 4.0 | Low: CRA env shim, eslintConfig, reportWebVitals |
+| ~~12~~ | ~~Extract shared types between frontend/functions~~ | - | - | - | Completed |
+| ~~13~~ | ~~Complete CRA-to-Vite migration cleanup~~ | - | - | - | Completed |
 | 14 | Remove console.logs / add production log stripping | 5 | M | 1.7 | Medium: 139 console.log in production builds |
-| 15 | Fix functions npm audit vulnerabilities | 5 | S | 5.0 | Medium: 9 vulnerabilities in functions deps |
+| ~~15~~ | ~~Fix functions npm audit vulnerabilities~~ | - | - | - | Done: 9→3 remaining (fast-xml-parser in firebase-admin) |
 
 ## Non-Audit Backlog (pre-existing)
 
@@ -86,6 +92,9 @@
 - [x] Fix N+1 auth calls in sendDailyPuzzleReminders — batched getUsers() (2026-02-05, audit)
 - [x] Add keyboard accessibility to game tiles & color picker (2026-02-05, audit)
 - [x] Add client-side input validation to auth forms (2026-02-05, audit)
+- [x] Fix functions npm audit vulnerabilities — 9→3 remaining (2026-02-05, audit)
+- [x] Complete CRA-to-Vite migration cleanup — removed CRA artifacts, 3 unused deps (2026-02-05, audit)
+- [x] Extract shared types to shared/ directory — functions no longer import from ../../src/types (2026-02-05, audit)
 
 ## Deferred
 

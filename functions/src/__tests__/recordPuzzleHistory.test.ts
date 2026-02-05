@@ -4,7 +4,7 @@
  */
 
 import * as admin from 'firebase-admin';
-import { DifficultyLevel } from '../../../src/types/settings';
+import { DifficultyLevel } from '../../../shared/types';
 import { HttpsError } from 'firebase-functions/v2/https';
 
 // Mock firebase-admin

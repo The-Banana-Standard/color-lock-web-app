@@ -1,6 +1,5 @@
 import { calculateEloScore } from '../eloUtils';
-import { GameStatistics, defaultStats } from '../../../src/types/stats';
-import { DifficultyLevel } from '../../../src/types/settings';
+import { GameStatistics, defaultStats, DifficultyLevel } from '../../../shared/types';
 
 describe('calculateEloScore', () => {
   const mockPuzzleData = { algoScore: 10 };

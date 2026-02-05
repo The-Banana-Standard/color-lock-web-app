@@ -1,4 +1,6 @@
 import { TileColor } from './index';
+export { DifficultyLevel } from '../../shared/types';
+import { DifficultyLevel } from '../../shared/types';
 
 /**
  * Color blindness options
@@ -8,15 +10,6 @@ export enum ColorBlindMode {
   Protanopia = "protanopia",
   Deuteranopia = "deuteranopia",
   Tritanopia = "tritanopia"
-}
-
-/**
- * Game difficulty levels
- */
-export enum DifficultyLevel {
-  Easy = "easy",
-  Medium = "medium",
-  Hard = "hard"
 }
 
 /**

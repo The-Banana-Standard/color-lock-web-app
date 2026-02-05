@@ -1,7 +1,6 @@
 import * as admin from "firebase-admin";
 import { logger as v2Logger } from "firebase-functions/v2"; // Assuming v2 logger
-import { DifficultyLevel } from "../../src/types/settings"; // Import DifficultyLevel enum
-import { GameStatistics } from "../../src/types/stats"; // Import GameStatistics type
+import { DifficultyLevel, GameStatistics } from "../../shared/types";
 
 const logger = v2Logger;
 
