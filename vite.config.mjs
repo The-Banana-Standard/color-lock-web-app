@@ -17,7 +17,30 @@ const craEnvVars = Object.keys(process.env)
 // https://vitejs.dev/config/
 export default defineConfig({
   build: {
-    outDir: './dist/color-lock-web'
+    outDir: './dist/color-lock-web',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'firebase': [
+            'firebase/app',
+            'firebase/auth',
+            'firebase/firestore',
+            'firebase/functions',
+            'firebase/analytics',
+            'firebase/app-check',
+          ],
+          'vendor': [
+            'react',
+            'react-dom',
+            '@fortawesome/fontawesome-svg-core',
+            '@fortawesome/react-fontawesome',
+            '@fortawesome/free-solid-svg-icons',
+            '@fortawesome/free-brands-svg-icons',
+            'react-confetti',
+          ],
+        },
+      },
+    },
   },
   server: {
     port: 3000,

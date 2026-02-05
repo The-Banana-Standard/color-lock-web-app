@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
+import React, { useState, useEffect, createContext, useContext, useRef, Suspense } from 'react';
 import './scss/main.scss';
 import ReactConfetti from 'react-confetti';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -8,25 +8,27 @@ import { faHome, faGear, faTrophy, faInfoCircle } from '@fortawesome/free-solid-
 import { AppSettings, DifficultyLevel } from './types/settings';
 import { TileColor } from './types';
 
-// Components
-import ColorPickerModal from './components/ColorPickerModal';
-import WinModal from './components/WinModal';
-import SettingsModal from './components/SettingsModal';
-import StatsModal from './components/StatsModal';
+// Core components (loaded immediately)
 import GameGrid from './components/GameGrid';
 import { GameHeader, GameFooter } from './components/GameControls';
-import AutocompleteModal from './components/AutocompleteModal';
-import BotSolutionModal from './components/BotSolutionModal';
-import LostGameModal from './components/LostGameModal';
-import TutorialModal from './components/TutorialModal';
 import TutorialOverlay from './components/TutorialOverlay';
 import TutorialHighlight from './components/TutorialHighlight';
-import TutorialWarningModal from './components/TutorialWarningModal';
-import LandingScreen from './components/LandingScreen';
 import SignUpButton from './components/SignUpButton';
 import HamburgerMenu from './components/HamburgerMenu';
-import UsageStatsScreen from './components/UsageStatsScreen';
-import DeleteAccountPage from './components/DeleteAccountPage';
+
+// Lazy-loaded components (loaded on demand)
+const ColorPickerModal = React.lazy(() => import('./components/ColorPickerModal'));
+const WinModal = React.lazy(() => import('./components/WinModal'));
+const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
+const StatsModal = React.lazy(() => import('./components/StatsModal'));
+const AutocompleteModal = React.lazy(() => import('./components/AutocompleteModal'));
+const BotSolutionModal = React.lazy(() => import('./components/BotSolutionModal'));
+const LostGameModal = React.lazy(() => import('./components/LostGameModal'));
+const TutorialModal = React.lazy(() => import('./components/TutorialModal'));
+const TutorialWarningModal = React.lazy(() => import('./components/TutorialWarningModal'));
+const LandingScreen = React.lazy(() => import('./components/LandingScreen'));
+const UsageStatsScreen = React.lazy(() => import('./components/UsageStatsScreen'));
+const DeleteAccountPage = React.lazy(() => import('./components/DeleteAccountPage'));
 
 // Utils
 import { generateShareText } from './utils/shareUtils';
@@ -346,10 +348,11 @@ const GameContainer = () => {
       </div>
 
       {/* Modals - keep these at the bottom of the container */}
+      <Suspense fallback={null}>
       {/* Tutorial Modal - For intro */}
-      <TutorialModal 
-        isOpen={showTutorialModal} 
-        onClose={() => setShowTutorialModal(false)} 
+      <TutorialModal
+        isOpen={showTutorialModal}
+        onClose={() => setShowTutorialModal(false)}
         type="intro"
       />
 
@@ -484,13 +487,14 @@ const GameContainer = () => {
       />
 
       {/* Stats Modal */}
-      <StatsModal 
+      <StatsModal
         isOpen={showStats}
         onClose={() => setShowStats(false)}
         stats={gameStats}
         onShareStats={shareGameStats}
         isLoading={isLoadingStats}
       />
+      </Suspense>
 
       {/* Error display */}
       {error && (
@@ -584,16 +588,16 @@ const AuthenticatedApp: React.FC = () => {
 
   // Handle delete account page - accessible even if not authenticated
   if (currentScreen === 'deleteAccount') {
-    return <DeleteAccountPage />;
+    return <Suspense fallback={null}><DeleteAccountPage /></Suspense>;
   }
 
   // Allow game access for both authenticated users AND unauthenticated browsers
   if (isAuthenticated || isUnauthenticatedBrowsing) {
     // Handle navigation based on currentScreen
     if (currentScreen === 'usageStats') {
-      return <UsageStatsScreen />;
+      return <Suspense fallback={null}><UsageStatsScreen /></Suspense>;
     } else if (showLandingPage) {
-      return <LandingScreen />;
+      return <Suspense fallback={null}><LandingScreen /></Suspense>;
     } else {
       return (
         <GameProvider>
@@ -605,7 +609,7 @@ const AuthenticatedApp: React.FC = () => {
     }
   }
 
-  return <LandingScreen />;
+  return <Suspense fallback={null}><LandingScreen /></Suspense>;
 };
 
 export default App;
