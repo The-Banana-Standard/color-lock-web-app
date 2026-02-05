@@ -99,21 +99,21 @@ describe('Helper Functions', () => {
 
     it('should calculate penalty for second attempt', () => {
       const penalty = calculateEloAttemptPenalty(2);
-      expect(penalty).toBeCloseTo(-20, 1);
+      expect(penalty).toBeCloseTo(-0.5, 2);
     });
 
     it('should calculate cumulative penalty for third attempt', () => {
       const penalty = calculateEloAttemptPenalty(3);
-      // -20/sqrt(1) + -20/sqrt(2) ≈ -20 + -14.14 ≈ -34.14
-      expect(penalty).toBeCloseTo(-34.14, 1);
+      // -0.5/sqrt(1) + -0.5/sqrt(2) ≈ -0.5 + -0.354 ≈ -0.854
+      expect(penalty).toBeCloseTo(-0.854, 2);
     });
 
     it('should calculate cumulative penalty for fifth attempt', () => {
       const penalty = calculateEloAttemptPenalty(5);
       // Sum of penalties for attempts 2-5
-      // -20/sqrt(1) + -20/sqrt(2) + -20/sqrt(3) + -20/sqrt(4)
-      // ≈ -20 + -14.14 + -11.55 + -10 ≈ -55.69
-      expect(penalty).toBeCloseTo(-55.69, 1);
+      // -0.5/sqrt(1) + -0.5/sqrt(2) + -0.5/sqrt(3) + -0.5/sqrt(4)
+      // ≈ -0.5 + -0.354 + -0.289 + -0.25 ≈ -1.392
+      expect(penalty).toBeCloseTo(-1.392, 2);
     });
 
     it('should cap penalties at attempt 30', () => {
