@@ -37,35 +37,14 @@
     "trigger:elo:emulator": "node scripts/trigger-scheduled-function.js calculateDailyEloScores",
     "trigger:leaderboard:emulator": "node scripts/trigger-scheduled-function.js scheduledLeaderboardCalculation"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
   "devDependencies": {
-    "@rollup/plugin-replace": "^6.0.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/ui": "^3.2.0",
-    "eslint-config-react-app": "^7.0.1",
     "firebase-admin": "^13.2.0",
     "jiti": "^1.21.0",
     "sass": "^1.85.1",
     "vite": "^6.3.6",
-    "vitest": "^3.2.4",
-    "web-vitals": "^4.2.4"
+    "vitest": "^3.2.4"
   }
 }
