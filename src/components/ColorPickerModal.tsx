@@ -18,7 +18,13 @@ const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
   currentColor
 }) => {
   return (
-    <div className="color-picker-modal-backdrop" onClick={onCancel}>
+    <div
+      className="color-picker-modal-backdrop"
+      onClick={onCancel}
+      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
+      role="dialog"
+      aria-label="Select a color"
+    >
       <div className="color-picker-modal" onClick={e => e.stopPropagation()}>        
         <div className="color-bubbles">
           {allColors.map(color => {

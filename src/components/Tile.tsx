@@ -52,10 +52,18 @@ const Tile: React.FC<TileProps> = ({
   };
   
   return (
-    <div 
+    <div
       className={classes.join(' ')}
       style={cellStyle}
       onClick={() => onClick(row, col)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(row, col);
+        }
+      }}
+      role="button"
+      tabIndex={0}
       aria-label={`${colorName} tile at row ${row+1}, column ${col+1}${isLocked ? ', locked' : ''}${isPrimaryHintCell ? ', hint target' : ''}`}
       data-row={row}
       data-col={col}
