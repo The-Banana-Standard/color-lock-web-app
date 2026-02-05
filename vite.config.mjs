@@ -3,6 +3,12 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  esbuild: {
+    // Strip console.log and console.debug from production builds.
+    // console.error and console.warn are preserved for monitoring.
+    drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
+    pure: process.env.NODE_ENV === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
+  },
   build: {
     outDir: './dist/color-lock-web',
     rollupOptions: {

@@ -57,7 +57,7 @@
 | 11 | Pre-compute leaderboard snapshots | 8 | M | 2.7 | High: full collection group scan per request |
 | ~~12~~ | ~~Extract shared types between frontend/functions~~ | - | - | - | Completed |
 | ~~13~~ | ~~Complete CRA-to-Vite migration cleanup~~ | - | - | - | Completed |
-| 14 | Remove console.logs / add production log stripping | 5 | M | 1.7 | Medium: 139 console.log in production builds |
+| ~~14~~ | ~~Remove console.logs / add production log stripping~~ | - | - | - | Completed: esbuild pure drops console.log/debug/info |
 | ~~15~~ | ~~Fix functions npm audit vulnerabilities~~ | - | - | - | Done: 9→3 remaining (fast-xml-parser in firebase-admin) |
 
 ## Non-Audit Backlog (pre-existing)
@@ -92,6 +92,7 @@
 - [x] Extract shared types to shared/ directory — functions no longer import from ../../src/types (2026-02-05, audit)
 - [x] Strip userIds from getUsageStats response — defense-in-depth, remove UIDs from API response (2026-02-05, audit)
 - [x] Type safety improvements — eliminated all `any` types from non-test source (0 remaining) (2026-02-05, audit)
+- [x] Production log stripping — esbuild drops console.log/debug/info in builds (2026-02-05, audit)
 
 ## Deferred
 
