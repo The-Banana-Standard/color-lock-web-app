@@ -14,31 +14,37 @@
 ### strip-userids-from-usage-stats
 **Task**: Strip userIds from getUsageStats response
 **Priority**: 3 of 15
-**Stage**: PLAN
+**Stage**: IMPLEMENT
 **Pipeline**: code-workflow
 **Started**: 2026-02-05
 **Issue**: High: exposes all player UIDs to any caller
 **Attempts**: 0
-**Files**: TBD
+**Files**:
+- MOD: functions/src/index.ts
+- MOD: src/services/firebaseService.ts
 **Quality Scores**:
 | Stage | Score | Attempts | Status |
 |-------|-------|----------|--------|
 | RESEARCH | 9.1 | 1 | PASS |
-| PLAN | - | 0 | CURRENT |
+| PLAN | 9.0 | 1 | PASS |
+| IMPLEMENT | - | 0 | CURRENT |
 
 ### parallelize-datacache-fetches
 **Task**: Parallelize DataCacheContext fetches
 **Priority**: 4 of 15
-**Stage**: RESEARCH
+**Stage**: IMPLEMENT
 **Pipeline**: code-workflow
 **Started**: 2026-02-05
 **Issue**: High: 6 sequential API calls on load
 **Attempts**: 0
-**Files**: TBD
+**Files**:
+- MOD: src/contexts/DataCacheContext.tsx
 **Quality Scores**:
 | Stage | Score | Attempts | Status |
 |-------|-------|----------|--------|
-| RESEARCH | - | 0 | CURRENT |
+| RESEARCH | 9.8 | 1 | PASS |
+| PLAN | 9.1 | 1 | PASS |
+| IMPLEMENT | - | 0 | CURRENT |
 
 ---
 
@@ -46,12 +52,7 @@
 
 | # | Task | Impact | Effort | Priority | Source |
 |---|------|--------|--------|----------|--------|
-| 5 | Replace dangerouslySetInnerHTML in tutorials | 8 | S | 8.0 | High: fragile XSS-risk pattern |
-| 6 | Quick wins cleanup (typo, .bak, unused deps, dead code) | 5 | S | 5.0 | Medium: notification typo, .bak files, firebase-admin in root, unused zod/statsStorage |
-| 7 | Fix N+1 auth calls in sendDailyPuzzleReminders | 7 | S | 7.0 | High: N sequential Auth API calls |
-| 8 | Add keyboard accessibility to game tiles & modals | 6 | S | 6.0 | Low: core game inaccessible to keyboard users |
 | 9 | Type safety improvements (replace `any` types) | 5 | S | 5.0 | Medium: 56 `any` usages weaken type checking |
-| 10 | Add client-side input validation to auth forms | 6 | S | 6.0 | Medium: no validation before Firebase calls |
 | 11 | Pre-compute leaderboard snapshots | 8 | M | 2.7 | High: full collection group scan per request |
 | 12 | Extract shared types between frontend/functions | 5 | S | 5.0 | Medium: functions import from ../../src/types |
 | 13 | Complete CRA-to-Vite migration cleanup | 4 | S | 4.0 | Low: CRA env shim, eslintConfig, reportWebVitals |
@@ -80,6 +81,11 @@
 - [x] Dark mode theming sweep
 - [x] Streaks UI — surface streak data in stats view
 - [x] Add admin auth to backfillUsageStats & getUsageStats — UID allowlist via env var (2026-02-05, audit)
+- [x] Replace dangerouslySetInnerHTML in TutorialModal — safe React elements (2026-02-05, audit)
+- [x] Quick wins cleanup — typo fix, .bak files, unused zod, dead statsStorage (2026-02-05, audit)
+- [x] Fix N+1 auth calls in sendDailyPuzzleReminders — batched getUsers() (2026-02-05, audit)
+- [x] Add keyboard accessibility to game tiles & color picker (2026-02-05, audit)
+- [x] Add client-side input validation to auth forms (2026-02-05, audit)
 
 ## Deferred
 
