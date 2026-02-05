@@ -21,18 +21,32 @@ interface TutorialModalProps {
  * @param text The text to process
  * @returns React nodes with colored spans for color names
  */
-const colorizeText = (text: string): string => {
-  // Define color names to match
+const colorizeText = (text: string): React.ReactNode => {
   const colorNames = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'white', 'black'];
+  const colorPattern = new RegExp(`\\b(${colorNames.join('|')})\\b`, 'gi');
 
-  // Case-insensitive regex to match color names with word boundaries
-  const colorPattern = `\\b(${colorNames.join('|')})\\b`;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
 
-  // Replace color names with styled spans using CSS classes
-  return text.replace(new RegExp(colorPattern, 'gi'), (match) => {
-    const colorName = match.toLowerCase();
-    return `<span class="tutorial-color-text tutorial-color-${colorName}">${match}</span>`;
-  });
+  while ((match = colorPattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const colorName = match[1].toLowerCase();
+    parts.push(
+      <span key={match.index} className={`tutorial-color-text tutorial-color-${colorName}`}>
+        {match[0]}
+      </span>
+    );
+    lastIndex = colorPattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
 };
 
 /**
@@ -114,9 +128,6 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose, type = '
       ? demonstrationMessage
       : message;
     
-    // Process the message text with color highlighting
-    const processedMessage = colorizeText(displayMessage);
-    
     return (
       <div className={`tutorial-step-modal ${positionClass} ${stepSpecificClass}`}>
         <div className="tutorial-step-content" ref={modalRef}>
@@ -124,10 +135,9 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose, type = '
             <h3 className="tutorial-step-title">{title}</h3>
             <span className="tutorial-step-counter">Step {currentStepNumber} of {totalSteps}</span>
           </div>
-          <p 
-            className="tutorial-step-message"
-            dangerouslySetInnerHTML={{ __html: processedMessage }}
-          />
+          <p className="tutorial-step-message">
+            {colorizeText(displayMessage)}
+          </p>
           
           {shouldShowContinueButton && (
             <button 
