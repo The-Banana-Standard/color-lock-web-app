@@ -6,6 +6,15 @@ import { logger as v2Logger } from "firebase-functions/v2";
 import { calculateEloScore } from "./eloUtils";
 import { assertAdmin } from "./adminAuth";
 import { GameStatistics, defaultStats, DifficultyLevel } from "../../shared/types";
+import {
+    PuzzleDifficultyEntry,
+    UserPuzzleDocument,
+    LevelAgnosticLeaderboardDoc,
+    DifficultyLeaderboardDoc,
+    DailyScoresV2Document,
+    FirestorePuzzleGrid,
+    PuzzleV2Document,
+} from "./firestoreTypes";
 import { DateTime } from "luxon";
 
 /**
@@ -144,7 +153,7 @@ export const fetchPuzzleV2 = onCall(
                 throw new HttpsError("not-found", `Puzzle(s) not found for difficulties: ${missingDifficulties.join(", ")}`);
             }
 
-            const puzzleData = {} as Record<(typeof difficulties)[number], any>;
+            const puzzleData = {} as Record<(typeof difficulties)[number], PuzzleV2Document>;
 
             docSnaps.forEach((snap, idx) => {
                 const difficulty = difficulties[idx];
@@ -164,7 +173,7 @@ export const fetchPuzzleV2 = onCall(
                     throw new HttpsError("internal", `Invalid puzzle data format for difficulty: ${difficulty}`);
                 }
 
-                puzzleData[difficulty] = data;
+                puzzleData[difficulty] = data as PuzzleV2Document;
             });
 
             return { success: true, data: puzzleData };
@@ -190,7 +199,7 @@ interface RecordPuzzlePayload {
     win_loss: "win" | "loss";
     attemptNumber?: number;
     // NEW OPTIONAL FIELDS for best scores tracking:
-    states?: any[];      // PuzzleGrid[] (Firebase admin doesn't have frontend types)
+    states?: FirestorePuzzleGrid[];  // PuzzleGrid[] (Firebase admin doesn't have frontend types)
     actions?: number[];
     targetColor?: string;
     colorMap?: number[];
@@ -356,12 +365,13 @@ async function sendBestScoreNotifications(
             sentCount++;
             logger.info(`sendBestScoreNotifications: Sent to user ${userId}`);
 
-        } catch (userError: any) {
+        } catch (userError: unknown) {
             errorCount++;
 
             // Handle invalid/expired tokens
-            if (userError?.code === 'messaging/registration-token-not-registered' ||
-                userError?.code === 'messaging/invalid-registration-token') {
+            const errorCode = (userError as { code?: string })?.code;
+            if (errorCode === 'messaging/registration-token-not-registered' ||
+                errorCode === 'messaging/invalid-registration-token') {
                 logger.warn(`sendBestScoreNotifications: Invalid FCM token for user ${userId}`);
             } else {
                 logger.error(`sendBestScoreNotifications: Error sending to user ${userId}:`, userError);
@@ -584,35 +594,23 @@ export const recordPuzzleHistory = onCall(
             ]);
 
             // Prepare in-memory data
-            const puzzleData = puzzleSnap.exists ? (puzzleSnap.data() || {}) : {} as Record<string, unknown>;
-            const la = laSnap.exists ? (laSnap.data() as any) : {};
-            const d = dSnap.exists ? (dSnap.data() as any) : {};
+            const puzzleData: UserPuzzleDocument = puzzleSnap.exists ? (puzzleSnap.data() as UserPuzzleDocument || {}) : {};
+            const la: LevelAgnosticLeaderboardDoc = laSnap.exists ? (laSnap.data() as LevelAgnosticLeaderboardDoc) : {};
+            const d: DifficultyLeaderboardDoc = dSnap.exists ? (dSnap.data() as DifficultyLeaderboardDoc) : {};
 
             // Compute difficulty-specific attempt count
             const diffKey = difficulty; // 'easy' | 'medium' | 'hard'
             // Read existing difficulty data once (used throughout for both win/loss cases)
-            const existingDiffData = (puzzleData as any)[diffKey] as {
-                attempts?: number;
-                attemptNumber?: number;
-                lowestMovesAttemptNumber?: number;
-                moves?: number;
-                hintUsed?: boolean;
-                firstTry?: boolean;
-                firstToBeatBot?: boolean;
-                eloScore?: number;
-                elo?: number;
-                attemptToTieBot?: number;
-                attemptToBeatBot?: number;
-            } | undefined;
+            const existingDiffData = puzzleData[diffKey] as PuzzleDifficultyEntry | undefined;
             const prevDifficultyAttempts = typeof existingDiffData?.attempts === 'number' ? existingDiffData.attempts : 0;
             const solutionUsedThisAttempt = hintUsed;
             const solutionUsedPreviously = existingDiffData?.hintUsed === true;
             const solutionEverUsedOnThisDifficulty = solutionUsedThisAttempt || solutionUsedPreviously;
 
             // Always count attempts (global + per difficulty)
-            const prevTotalAttempts = typeof (puzzleData as any).totalAttempts === 'number' ? (puzzleData as any).totalAttempts : 0;
+            const prevTotalAttempts = typeof puzzleData.totalAttempts === 'number' ? puzzleData.totalAttempts : 0;
             const globalAttemptNumber = prevTotalAttempts + 1;
-            (puzzleData as any).totalAttempts = globalAttemptNumber;
+            puzzleData.totalAttempts = globalAttemptNumber;
 
             const difficultyAttemptNumber = prevDifficultyAttempts + 1;
 
@@ -624,7 +622,7 @@ export const recordPuzzleHistory = onCall(
             if (isWin) {
                 // Reuse existingDiffData read earlier (no redundant read)
                 const existing = existingDiffData;
-                let newDiffObj: any;
+                let newDiffObj: PuzzleDifficultyEntry;
 
                 if (solutionEverUsedOnThisDifficulty) {
                     // Solution has been used on this difficulty (now or before)
@@ -669,7 +667,7 @@ export const recordPuzzleHistory = onCall(
                     const achievedTieNow = moves <= botMoves;
                     const achievedBeatNow = moves < botMoves;
 
-                    const existingMovesVal = (existing as any)?.moves;
+                    const existingMovesVal = existing?.moves;
                     const shouldReplaceMoves = !existing || typeof existingMovesVal !== 'number' || (typeof existingMovesVal === 'number' && moves < existingMovesVal);
 
                     if (!existing) {
@@ -687,8 +685,8 @@ export const recordPuzzleHistory = onCall(
                         newDiffObj.firstToBeatBot = firstToBeatBot;
                     } else {
                         // Preserve first recorded attempts; only set if not previously set
-                        const attemptToTieBot = (existing as any).attemptToTieBot ?? (achievedTieNow ? difficultyAttemptNumber : null);
-                        const attemptToBeatBot = (existing as any).attemptToBeatBot ?? (achievedBeatNow ? difficultyAttemptNumber : null);
+                        const attemptToTieBot = existing.attemptToTieBot ?? (achievedTieNow ? difficultyAttemptNumber : null);
+                        const attemptToBeatBot = existing.attemptToBeatBot ?? (achievedBeatNow ? difficultyAttemptNumber : null);
 
                         if (shouldReplaceMoves) {
                             newDiffObj = {
@@ -710,7 +708,7 @@ export const recordPuzzleHistory = onCall(
                                 lowestMovesAttemptNumber: existing.lowestMovesAttemptNumber ?? null,
                                 moves: existing.moves,
                                 firstTry: existing.firstTry ?? firstTry,
-                                eloScore: (existing as any).eloScore ?? (existing as any).elo ?? elo,
+                                eloScore: existing.eloScore ?? existing.elo ?? elo,
                                 attemptToTieBot,
                                 attemptToBeatBot,
                                 hintUsed: false
@@ -721,7 +719,7 @@ export const recordPuzzleHistory = onCall(
 
                     // Also update totalAttempts
                 }
-                (puzzleData as any)[diffKey] = newDiffObj;
+                puzzleData[diffKey] = newDiffObj;
 
                 // --- New: Write per-difficulty daily score to separate collection (v2) ---
                 // Path: dailyScoresV2/{puzzleId}/{difficulty}/{userId} with field { moves }
@@ -729,7 +727,7 @@ export const recordPuzzleHistory = onCall(
                 // ONLY write if solution was NOT used on this difficulty
                 if (!solutionEverUsedOnThisDifficulty) {
                     try {
-                        const existingMoves = (existing as any)?.moves;
+                        const existingMoves = existing?.moves;
                         const shouldMirror = !existing || typeof existingMoves !== 'number' || (typeof existingMoves === 'number' && moves < existingMoves);
                         if (shouldMirror) {
                             // Write nested map using proper merge semantics (no dot-path in set)
@@ -794,7 +792,7 @@ export const recordPuzzleHistory = onCall(
                 // Loss: ensure difficulty entry exists with defaults on first recorded loss
                 // Reuse existingDiffData read earlier (no redundant read)
                 if (solutionEverUsedOnThisDifficulty) {
-                    (puzzleData as any)[diffKey] = existingDiffData ? {
+                    puzzleData[diffKey] = existingDiffData ? {
                         ...existingDiffData,
                         attempts: difficultyAttemptNumber,
                         totalAttempts: difficultyAttemptNumber,
@@ -814,7 +812,7 @@ export const recordPuzzleHistory = onCall(
                     };
                 } else {
                     if (!existingDiffData) {
-                        (puzzleData as any)[diffKey] = {
+                        puzzleData[diffKey] = {
                             attempts: difficultyAttemptNumber,
                             totalAttempts: difficultyAttemptNumber,
                             lowestMovesAttemptNumber: null,
@@ -829,7 +827,7 @@ export const recordPuzzleHistory = onCall(
                         logger.info("Loss recorded for puzzle history only, not writing to dailyScoresV2", { puzzleId, difficulty: diffKey, userId });
                     } else {
                         // Update attempts counter for existing losses
-                        (puzzleData as any)[diffKey] = {
+                        puzzleData[diffKey] = {
                             ...existingDiffData,
                             attempts: difficultyAttemptNumber,
                             totalAttempts: difficultyAttemptNumber,
@@ -867,9 +865,9 @@ export const recordPuzzleHistory = onCall(
             longestStreak = Math.max(prevLongestStreak, currentStreak);
 
             // Prepare difficulty leaderboard update (no moves/puzzleAttempts in difficulty docs)
-            let diffUpdate: any = {};
+            let diffUpdate: Partial<DifficultyLeaderboardDoc> = {};
             // Prepare level-agnostic Elo updates when new best Elo for the day is achieved
-            let eloAggregateUpdate: any = undefined;
+            let eloAggregateUpdate: Partial<LevelAgnosticLeaderboardDoc> | undefined = undefined;
             if (isWin) {
                 const prevFirstTryCurrent = typeof d?.currentFirstTryStreak === 'number' ? d.currentFirstTryStreak : 0;
                 const prevFirstTryLongest = typeof d?.longestFirstTryStreak === 'number' ? d.longestFirstTryStreak : 0;
@@ -963,14 +961,14 @@ export const recordPuzzleHistory = onCall(
                     // represents comprehensive engagement with each day's puzzle.
                     // Note: This differs from traditional single-value Elo systems but aligns with
                     // the multi-difficulty puzzle structure where each difficulty is a distinct challenge.
-                    const easyElo = typeof (puzzleData as any).easy?.eloScore === 'number'
-                        ? (puzzleData as any).easy.eloScore
+                    const easyElo = typeof puzzleData.easy?.eloScore === 'number'
+                        ? puzzleData.easy.eloScore
                         : 0;
-                    const mediumElo = typeof (puzzleData as any).medium?.eloScore === 'number'
-                        ? (puzzleData as any).medium.eloScore
+                    const mediumElo = typeof puzzleData.medium?.eloScore === 'number'
+                        ? puzzleData.medium.eloScore
                         : 0;
-                    const hardElo = typeof (puzzleData as any).hard?.eloScore === 'number'
-                        ? (puzzleData as any).hard.eloScore
+                    const hardElo = typeof puzzleData.hard?.eloScore === 'number'
+                        ? puzzleData.hard.eloScore
                         : 0;
 
                     const totalElo = easyElo + mediumElo + hardElo;
@@ -1050,7 +1048,7 @@ export const recordPuzzleHistory = onCall(
             // Perform writes after all reads (always write to persist totalAttempts)
             tx.set(puzzleRef, puzzleData, { merge: true });
 
-            const laBaseUpdate: any = {
+            const laBaseUpdate: Partial<LevelAgnosticLeaderboardDoc> = {
                 moves: prevMoves + moves,
                 puzzleAttempts: prevAttempts + 1,
             };
@@ -1142,8 +1140,8 @@ export const setHintUsedForPuzzle = onCall(
 
         await db.runTransaction(async (tx) => {
             const snap = await tx.get(puzzleRef);
-            const data = snap.exists ? (snap.data() as any) : {};
-            const existingDiffData = (data && typeof data[normalizedDifficulty] === "object") ? (data[normalizedDifficulty] as any) : {};
+            const data: UserPuzzleDocument = snap.exists ? (snap.data() as UserPuzzleDocument) : {};
+            const existingDiffData: PuzzleDifficultyEntry = (data && typeof data[normalizedDifficulty] === "object") ? (data[normalizedDifficulty] as PuzzleDifficultyEntry) : {};
 
             tx.set(puzzleRef, {
                 [normalizedDifficulty]: {
@@ -1228,13 +1226,13 @@ export const getDailyScoresV2Stats = onCall(
         try {
             const baseRef = db.collection("dailyScoresV2").doc(puzzleId);
             const baseSnap = await baseRef.get();
-            const baseData = baseSnap.exists ? (baseSnap.data() as any) : {};
+            const baseData: DailyScoresV2Document = baseSnap.exists ? (baseSnap.data() as DailyScoresV2Document) : {};
 
             const result: Record<string, { lowestScore: number | null; totalPlayers: number; playersWithLowestScore: number; averageScore: number | null }> = {};
 
             // Compute directly from the main document map (ensures averageScore is included)
             for (const diff of diffKeys) {
-                const diffMap = (baseData && typeof baseData[diff] === 'object') ? (baseData[diff] as Record<string, any>) : {};
+                const diffMap = (baseData && typeof baseData[diff] === 'object') ? (baseData[diff] as Record<string, number>) : {};
                 let lowestScore: number | null = null;
                 let totalPlayers = 0;
                 let playersWithLowestScore = 0;
@@ -1302,8 +1300,8 @@ export const getWinModalStats = onCall(
                 hardRef.get(),
             ]);
 
-            const puzzleData = puzzleSnap.exists ? puzzleSnap.data() as any : null;
-            const laData = laSnap.exists ? (laSnap.data() as any) : {};
+            const puzzleData = puzzleSnap.exists ? puzzleSnap.data() as UserPuzzleDocument : null;
+            const laData: LevelAgnosticLeaderboardDoc = laSnap.exists ? (laSnap.data() as LevelAgnosticLeaderboardDoc) : {};
 
             const currentPuzzleCompletedStreak = typeof laData.currentPuzzleCompletedStreak === 'number'
                 ? laData.currentPuzzleCompletedStreak
@@ -1313,9 +1311,9 @@ export const getWinModalStats = onCall(
                 ? laData.lastPuzzleCompletedDate
                 : null;
 
-            const buildDifficultyStats = (difficultySnap: any, difficulty: string) => {
-                const dData = difficultySnap.exists ? (difficultySnap.data() as any) : {};
-                const difficultyData = puzzleData?.[difficulty];
+            const buildDifficultyStats = (difficultySnap: FirebaseFirestore.DocumentSnapshot, difficulty: string) => {
+                const dData: DifficultyLeaderboardDoc = difficultySnap.exists ? (difficultySnap.data() as DifficultyLeaderboardDoc) : {};
+                const difficultyData = puzzleData?.[difficulty] as PuzzleDifficultyEntry | undefined;
 
                 return {
                     lastTieBotDate: typeof dData.lastTieBotDate === 'string' ? dData.lastTieBotDate : null,
@@ -1382,9 +1380,9 @@ export const getPersonalStats = onCall(
                 difficultyRef.get(),
             ]);
 
-            const puzzleData = puzzleSnap.exists ? (puzzleSnap.data() as any) : {};
-            const laData = laSnap.exists ? (laSnap.data() as any) : {};
-            const dData = diffSnap.exists ? (diffSnap.data() as any) : {};
+            const puzzleData: UserPuzzleDocument = puzzleSnap.exists ? (puzzleSnap.data() as UserPuzzleDocument) : {};
+            const laData: LevelAgnosticLeaderboardDoc = laSnap.exists ? (laSnap.data() as LevelAgnosticLeaderboardDoc) : {};
+            const dData: DifficultyLeaderboardDoc = diffSnap.exists ? (diffSnap.data() as DifficultyLeaderboardDoc) : {};
             
             // Get difficulty-specific data
             const diffData = puzzleData[normalizedDifficulty] || {};
@@ -1463,10 +1461,88 @@ interface LeaderboardEntryV2 {
     isCurrent?: boolean; // For streaks, indicates if current equals longest
 }
 
+// Snapshot entry stored in pre-computed leaderboard documents (without display name for compact storage)
+interface LeaderboardSnapshotEntry {
+    userId: string;
+    value: number;
+    currentValue?: number; // For streaks: current streak value
+}
+
+// Leaderboard configuration for all combinations
+interface LeaderboardConfig {
+    key: string; // Snapshot document ID
+    fieldPath: string;
+    targetDocId: string; // "levelAgnostic" | "easy" | "medium" | "hard"
+    checkCurrent: boolean;
+    currentFieldPath: string | null;
+}
+
+/**
+ * Build the full list of all leaderboard configurations (16 combinations).
+ */
+function getAllLeaderboardConfigs(): LeaderboardConfig[] {
+    const configs: LeaderboardConfig[] = [];
+
+    // Score leaderboards (levelAgnostic)
+    for (const sub of ['last7', 'last30', 'allTime'] as const) {
+        configs.push({
+            key: `score_${sub}`,
+            fieldPath: sub === 'last7' ? 'eloScoreLast7' : sub === 'last30' ? 'eloScoreLast30' : 'eloScoreAllTime',
+            targetDocId: 'levelAgnostic',
+            checkCurrent: false,
+            currentFieldPath: null,
+        });
+    }
+
+    // Goals leaderboards (per difficulty)
+    for (const diff of [DifficultyLevel.Easy, DifficultyLevel.Medium, DifficultyLevel.Hard]) {
+        for (const sub of ['beaten', 'matched'] as const) {
+            configs.push({
+                key: `goals_${sub}_${diff}`,
+                fieldPath: sub === 'beaten' ? 'goalsBeaten' : 'goalsAchieved',
+                targetDocId: diff,
+                checkCurrent: false,
+                currentFieldPath: null,
+            });
+        }
+    }
+
+    // Streaks leaderboards
+    for (const diff of [DifficultyLevel.Easy, DifficultyLevel.Medium, DifficultyLevel.Hard]) {
+        // firstTry (per difficulty)
+        configs.push({
+            key: `streaks_firstTry_${diff}`,
+            fieldPath: 'longestFirstTryStreak',
+            targetDocId: diff,
+            checkCurrent: true,
+            currentFieldPath: 'currentFirstTryStreak',
+        });
+        // goalAchieved (per difficulty)
+        configs.push({
+            key: `streaks_goalAchieved_${diff}`,
+            fieldPath: 'longestTieBotStreak',
+            targetDocId: diff,
+            checkCurrent: true,
+            currentFieldPath: 'currentTieBotStreak',
+        });
+    }
+
+    // puzzleCompleted (levelAgnostic)
+    configs.push({
+        key: 'streaks_puzzleCompleted',
+        fieldPath: 'longestPuzzleCompletedStreak',
+        targetDocId: 'levelAgnostic',
+        checkCurrent: true,
+        currentFieldPath: 'currentPuzzleCompletedStreak',
+    });
+
+    return configs;
+}
+
 export const getGlobalLeaderboardV2 = onCall(
     {
-        memory: "512MiB",
-        timeoutSeconds: 120,
+        memory: "256MiB",
+        timeoutSeconds: 30,
         ...getAppCheckConfig(),
     },
     async (request) => {
@@ -1487,63 +1563,91 @@ export const getGlobalLeaderboardV2 = onCall(
         const normalizedDifficulty = difficulty ? normalizeDifficulty(difficulty) : null;
 
         try {
-            // Determine which field to query based on category and subcategory
-            let fieldPath: string;
+            // Determine snapshot key and whether we need streak current checking
+            let snapshotKey: string;
             let checkCurrent = false;
-            let currentFieldPath: string | null = null;
 
             if (category === 'score') {
-                switch (subcategory) {
-                    case 'last7':
-                        fieldPath = 'eloScoreLast7';
-                        break;
-                    case 'last30':
-                        fieldPath = 'eloScoreLast30';
-                        break;
-                    case 'allTime':
-                        fieldPath = 'eloScoreAllTime';
-                        break;
-                    default:
-                        throw new HttpsError("invalid-argument", `Invalid score subcategory: ${subcategory}`);
+                if (!['last7', 'last30', 'allTime'].includes(subcategory)) {
+                    throw new HttpsError("invalid-argument", `Invalid score subcategory: ${subcategory}`);
                 }
+                snapshotKey = `score_${subcategory}`;
             } else if (category === 'goals' && normalizedDifficulty) {
-                switch (subcategory) {
-                    case 'beaten':
-                        fieldPath = 'goalsBeaten';
-                        break;
-                    case 'matched':
-                        fieldPath = 'goalsAchieved';
-                        break;
-                    default:
-                        throw new HttpsError("invalid-argument", `Invalid goals subcategory: ${subcategory}`);
+                if (!['beaten', 'matched'].includes(subcategory)) {
+                    throw new HttpsError("invalid-argument", `Invalid goals subcategory: ${subcategory}`);
                 }
-            } else if (category === 'streaks' && normalizedDifficulty) {
+                snapshotKey = `goals_${subcategory}_${normalizedDifficulty}`;
+            } else if (category === 'streaks') {
+                if (!['firstTry', 'goalAchieved', 'puzzleCompleted'].includes(subcategory)) {
+                    throw new HttpsError("invalid-argument", `Invalid streaks subcategory: ${subcategory}`);
+                }
                 checkCurrent = true;
-                switch (subcategory) {
-                    case 'firstTry':
-                        fieldPath = 'longestFirstTryStreak';
-                        currentFieldPath = 'currentFirstTryStreak';
-                        break;
-                    case 'goalAchieved':
-                        fieldPath = 'longestTieBotStreak';
-                        currentFieldPath = 'currentTieBotStreak';
-                        break;
-                    case 'puzzleCompleted':
-                        fieldPath = 'longestPuzzleCompletedStreak';
-                        currentFieldPath = 'currentPuzzleCompletedStreak';
-                        checkCurrent = true;
-                        break;
-                    default:
-                        throw new HttpsError("invalid-argument", `Invalid streaks subcategory: ${subcategory}`);
+                if (subcategory === 'puzzleCompleted') {
+                    snapshotKey = 'streaks_puzzleCompleted';
+                } else if (normalizedDifficulty) {
+                    snapshotKey = `streaks_${subcategory}_${normalizedDifficulty}`;
+                } else {
+                    throw new HttpsError("invalid-argument", "difficulty is required for this streaks subcategory.");
                 }
             } else {
                 throw new HttpsError("invalid-argument", "Invalid category or missing difficulty.");
             }
 
-            // Query all documents from the leaderboard collection group
-            const allLeaderboardDocs = await db.collectionGroup("leaderboard").get();
-            
-            // Determine which document ID to filter for
+            // Try to read from pre-computed snapshot (single document read)
+            const snapshotRef = db.collection("leaderboardSnapshots").doc(snapshotKey);
+            const snapshotDoc = await snapshotRef.get();
+
+            if (snapshotDoc.exists) {
+                const snapshotData = snapshotDoc.data()!;
+                const snapshotEntries = snapshotData.entries as Array<{
+                    userId: string;
+                    username: string;
+                    value: number;
+                    currentValue?: number;
+                }>;
+
+                const leaderboard: LeaderboardEntryV2[] = snapshotEntries.slice(0, 10).map((entry, index) => ({
+                    userId: entry.userId,
+                    username: entry.username,
+                    value: entry.value,
+                    rank: index + 1,
+                    isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined,
+                }));
+
+                let requesterEntry: LeaderboardEntryV2 | undefined;
+                if (requesterId !== "guest/unauthenticated") {
+                    const requesterIndex = snapshotEntries.findIndex(e => e.userId === requesterId);
+                    if (requesterIndex >= 10) {
+                        const entry = snapshotEntries[requesterIndex];
+                        requesterEntry = {
+                            userId: entry.userId,
+                            username: entry.username,
+                            value: entry.value,
+                            rank: requesterIndex + 1,
+                            isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined,
+                        };
+                    }
+                }
+
+                logger.info(`getGlobalLeaderboardV2: Served from snapshot '${snapshotKey}', ${leaderboard.length} entries, requester: ${!!requesterEntry}`);
+                return { success: true, leaderboard, requesterEntry };
+            }
+
+            // --- Fallback: no snapshot exists yet, do full collection group scan ---
+            logger.warn(`getGlobalLeaderboardV2: No snapshot for '${snapshotKey}', falling back to full scan`);
+
+            let fieldPath: string;
+            let currentFieldPath: string | null = null;
+            if (category === 'score') {
+                fieldPath = subcategory === 'last7' ? 'eloScoreLast7' : subcategory === 'last30' ? 'eloScoreLast30' : 'eloScoreAllTime';
+            } else if (category === 'goals') {
+                fieldPath = subcategory === 'beaten' ? 'goalsBeaten' : 'goalsAchieved';
+            } else {
+                if (subcategory === 'firstTry') { fieldPath = 'longestFirstTryStreak'; currentFieldPath = 'currentFirstTryStreak'; }
+                else if (subcategory === 'goalAchieved') { fieldPath = 'longestTieBotStreak'; currentFieldPath = 'currentTieBotStreak'; }
+                else { fieldPath = 'longestPuzzleCompletedStreak'; currentFieldPath = 'currentPuzzleCompletedStreak'; }
+            }
+
             let targetDocId: string;
             if (category === 'score' || (category === 'streaks' && subcategory === 'puzzleCompleted')) {
                 targetDocId = "levelAgnostic";
@@ -1553,115 +1657,76 @@ export const getGlobalLeaderboardV2 = onCall(
                 throw new HttpsError("internal", "Failed to determine target document.");
             }
 
-            // Extract userId from collection group doc path
-            const getUserIdFromDoc = (doc: FirebaseFirestore.QueryDocumentSnapshot) => {
-                const parent = doc.ref.parent; // leaderboard collection
-                const userDoc = parent.parent; // userPuzzleHistory/{uid} document
-                return userDoc ? userDoc.id : undefined;
-            };
-
-            // Build entries array, filtering by document ID in memory
+            const allLeaderboardDocs = await db.collectionGroup("leaderboard").get();
             const entries: Array<{ userId: string; value: number; currentValue?: number }> = [];
-            
+
             allLeaderboardDocs.forEach(doc => {
-                // Filter by document ID
                 if (doc.id !== targetDocId) return;
-                
-                const userId = getUserIdFromDoc(doc);
+                const userDoc = doc.ref.parent.parent;
+                const userId = userDoc ? userDoc.id : undefined;
                 if (!userId) return;
-                
-                const data = doc.data() as any;
-                const value = typeof data[fieldPath] === 'number' ? data[fieldPath] : null;
-                
+
+                const data = doc.data() as Record<string, unknown>;
+                const value = typeof data[fieldPath] === 'number' ? (data[fieldPath] as number) : null;
                 if (value === null || isNaN(value) || value === 0) return;
-                
+
                 const entry: { userId: string; value: number; currentValue?: number } = { userId, value };
-                
-                // If checking current streak, include current value
                 if (checkCurrent && currentFieldPath) {
-                    const currentValue = typeof data[currentFieldPath] === 'number' ? data[currentFieldPath] : null;
-                    if (currentValue !== null) {
-                        entry.currentValue = currentValue;
-                    }
+                    const cv = typeof data[currentFieldPath] === 'number' ? (data[currentFieldPath] as number) : undefined;
+                    if (cv !== undefined) entry.currentValue = cv;
                 }
-                
                 entries.push(entry);
             });
 
-            // Sort by value descending
             entries.sort((a, b) => b.value - a.value);
-
-            // Get top 10
             const top10 = entries.slice(0, 10);
 
-            // Find requester's entry if not in top 10
             let requesterEntry: LeaderboardEntryV2 | null = null;
             const requesterIndex = entries.findIndex(e => e.userId === requesterId);
             if (requesterIndex >= 10 && requesterId !== "guest/unauthenticated") {
                 const entry = entries[requesterIndex];
                 requesterEntry = {
                     userId: entry.userId,
-                    username: '', // Will be filled below
+                    username: '',
                     value: entry.value,
                     rank: requesterIndex + 1,
-                    isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined
+                    isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined,
                 };
             }
 
-            // Fetch usernames for top 10 + requester
             const userIdsToFetch = [...top10.map(e => e.userId)];
-            if (requesterEntry) {
-                userIdsToFetch.push(requesterEntry.userId);
-            }
+            if (requesterEntry) userIdsToFetch.push(requesterEntry.userId);
 
             const userDisplayNames = new Map<string, string>();
-            
             try {
                 for (let i = 0; i < userIdsToFetch.length; i += 100) {
                     const chunk = userIdsToFetch.slice(i, i + 100);
-                    const userRecords = await admin.auth().getUsers(
-                        chunk.map(uid => ({ uid }))
-                    );
-                    
+                    const userRecords = await admin.auth().getUsers(chunk.map(uid => ({ uid })));
                     userRecords.users.forEach(user => {
-                        userDisplayNames.set(
-                            user.uid,
-                            user.displayName || `User_${user.uid.substring(0, 6)}`
-                        );
+                        userDisplayNames.set(user.uid, user.displayName || `User_${user.uid.substring(0, 6)}`);
                     });
-                    
-                    userRecords.notFound.forEach(userIdentifier => {
-                        if ('uid' in userIdentifier) {
-                            const uid = userIdentifier.uid;
-                            userDisplayNames.set(uid, `User_${uid.substring(0, 6)}`);
-                        }
+                    userRecords.notFound.forEach(id => {
+                        if ('uid' in id) userDisplayNames.set(id.uid, `User_${id.uid.substring(0, 6)}`);
                     });
                 }
             } catch (authError) {
-                logger.error("getGlobalLeaderboardV2: Error fetching user display names:", authError);
+                logger.error("getGlobalLeaderboardV2: Error fetching display names:", authError);
             }
 
-            // Build final leaderboard entries
             const leaderboard: LeaderboardEntryV2[] = top10.map((entry, index) => ({
                 userId: entry.userId,
                 username: userDisplayNames.get(entry.userId) || `User_${entry.userId.substring(0, 6)}`,
                 value: entry.value,
                 rank: index + 1,
-                isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined
+                isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined,
             }));
 
-            // Update requester entry username if exists
             if (requesterEntry) {
                 requesterEntry.username = userDisplayNames.get(requesterEntry.userId) || `User_${requesterEntry.userId.substring(0, 6)}`;
             }
 
-            logger.info(`getGlobalLeaderboardV2: Returning ${leaderboard.length} entries with requester: ${!!requesterEntry}`);
-
-            return {
-                success: true,
-                leaderboard,
-                requesterEntry: requesterEntry || undefined
-            };
+            logger.info(`getGlobalLeaderboardV2: Fallback scan returning ${leaderboard.length} entries`);
+            return { success: true, leaderboard, requesterEntry: requesterEntry || undefined };
         } catch (e) {
             logger.error('getGlobalLeaderboardV2: error building leaderboard', e);
             throw new HttpsError('internal', 'Failed to fetch leaderboard');
@@ -2853,19 +2918,19 @@ export const deleteAccount = onCall(
                 message: "Account and all associated data have been permanently deleted." 
             };
             
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error(`deleteAccount: Error deleting account for user ${userId}:`, error);
-            
+
             // Re-throw HttpsError as-is
             if (error instanceof HttpsError) {
                 throw error;
             }
-            
+
             // Handle specific Firebase errors
-            if (error.code === 'auth/user-not-found') {
+            if ((error as { code?: string })?.code === 'auth/user-not-found') {
                 throw new HttpsError("not-found", "User account not found.");
             }
-            
+
             throw new HttpsError("internal", "Failed to delete account. Please try again later.");
         }
     }
@@ -3406,6 +3471,138 @@ export const updateWeeklyHardestPuzzle = onSchedule(
 
         } catch (error) {
             logger.error("updateWeeklyHardestPuzzle: Fatal error during execution:", error);
+            throw error;
+        }
+    }
+);
+
+// --- Pre-compute Leaderboard Snapshots ---
+
+/**
+ * Scheduled Cloud Function to pre-compute leaderboard snapshots.
+ * Runs every 4 hours. Performs a single collection group scan and stores
+ * the top entries for all 16 leaderboard combinations in leaderboardSnapshots/.
+ * This avoids the expensive full scan on every getGlobalLeaderboardV2 request.
+ */
+export const precomputeLeaderboards = onSchedule(
+    {
+        schedule: "0 */4 * * *", // Every 4 hours
+        timeZone: "UTC",
+        memory: "512MiB",
+        timeoutSeconds: 300,
+    },
+    async () => {
+        logger.info("precomputeLeaderboards: Starting execution");
+
+        try {
+            const configs = getAllLeaderboardConfigs();
+
+            // Single collection group scan — the expensive operation, done once
+            const allLeaderboardDocs = await db.collectionGroup("leaderboard").get();
+            logger.info(`precomputeLeaderboards: Fetched ${allLeaderboardDocs.size} leaderboard documents`);
+
+            // Extract userId from doc path: userPuzzleHistory/{uid}/leaderboard/{docId}
+            const getUserIdFromDoc = (doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+                const userDoc = doc.ref.parent.parent;
+                return userDoc ? userDoc.id : undefined;
+            };
+
+            // Group docs by their document ID for fast lookup
+            const docsByTargetId = new Map<string, Array<{ userId: string; data: Record<string, unknown> }>>();
+            allLeaderboardDocs.forEach(doc => {
+                const userId = getUserIdFromDoc(doc);
+                if (!userId) return;
+                const existing = docsByTargetId.get(doc.id) || [];
+                existing.push({ userId, data: doc.data() as Record<string, unknown> });
+                docsByTargetId.set(doc.id, existing);
+            });
+
+            // Collect all userIds that will appear in any top-100 for batch display name fetch
+            const allTopUserIds = new Set<string>();
+
+            // Process each leaderboard config
+            const snapshots = new Map<string, LeaderboardSnapshotEntry[]>();
+
+            for (const config of configs) {
+                const docs = docsByTargetId.get(config.targetDocId) || [];
+                const entries: LeaderboardSnapshotEntry[] = [];
+
+                for (const { userId, data } of docs) {
+                    const value = typeof data[config.fieldPath] === 'number' ? (data[config.fieldPath] as number) : null;
+                    if (value === null || isNaN(value) || value === 0) continue;
+
+                    const entry: LeaderboardSnapshotEntry = { userId, value };
+                    if (config.checkCurrent && config.currentFieldPath) {
+                        const currentValue = typeof data[config.currentFieldPath] === 'number'
+                            ? (data[config.currentFieldPath] as number) : undefined;
+                        if (currentValue !== undefined) {
+                            entry.currentValue = currentValue;
+                        }
+                    }
+                    entries.push(entry);
+                }
+
+                // Sort descending by value
+                entries.sort((a, b) => b.value - a.value);
+
+                // Keep top 100 for rank lookup (top 10 served + buffer for requester rank)
+                const top100 = entries.slice(0, 100);
+                snapshots.set(config.key, top100);
+
+                // Track userIds for display name resolution
+                for (const e of top100) {
+                    allTopUserIds.add(e.userId);
+                }
+            }
+
+            // Batch fetch display names for all users across all snapshots
+            const userDisplayNames = new Map<string, string>();
+            const userIdArray = Array.from(allTopUserIds);
+
+            for (let i = 0; i < userIdArray.length; i += 100) {
+                const chunk = userIdArray.slice(i, i + 100);
+                try {
+                    const userRecords = await admin.auth().getUsers(
+                        chunk.map(uid => ({ uid }))
+                    );
+                    userRecords.users.forEach(user => {
+                        userDisplayNames.set(
+                            user.uid,
+                            user.displayName || `User_${user.uid.substring(0, 6)}`
+                        );
+                    });
+                    userRecords.notFound.forEach(userIdentifier => {
+                        if ('uid' in userIdentifier) {
+                            const uid = userIdentifier.uid;
+                            userDisplayNames.set(uid, `User_${uid.substring(0, 6)}`);
+                        }
+                    });
+                } catch (authError) {
+                    logger.error("precomputeLeaderboards: Error fetching display names batch", authError);
+                }
+            }
+
+            // Write all snapshots to Firestore
+            const batch = db.batch();
+            for (const [key, entries] of snapshots) {
+                const snapshotRef = db.collection("leaderboardSnapshots").doc(key);
+                batch.set(snapshotRef, {
+                    entries: entries.map(e => ({
+                        userId: e.userId,
+                        username: userDisplayNames.get(e.userId) || `User_${e.userId.substring(0, 6)}`,
+                        value: e.value,
+                        ...(e.currentValue !== undefined ? { currentValue: e.currentValue } : {}),
+                    })),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    totalEntries: entries.length,
+                });
+            }
+            await batch.commit();
+
+            logger.info(`precomputeLeaderboards: Successfully wrote ${snapshots.size} leaderboard snapshots`);
+
+        } catch (error) {
+            logger.error("precomputeLeaderboards: Fatal error during execution:", error);
             throw error;
         }
     }
