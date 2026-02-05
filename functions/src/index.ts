@@ -1539,6 +1539,136 @@ function getAllLeaderboardConfigs(): LeaderboardConfig[] {
     return configs;
 }
 
+/**
+ * Resolve the Firestore field paths for a given leaderboard category/subcategory.
+ */
+function getLeaderboardFieldPaths(category: string, subcategory: string): { fieldPath: string; currentFieldPath: string | null } {
+    if (category === 'score') {
+        const fieldPath = subcategory === 'last7' ? 'eloScoreLast7' : subcategory === 'last30' ? 'eloScoreLast30' : 'eloScoreAllTime';
+        return { fieldPath, currentFieldPath: null };
+    } else if (category === 'goals') {
+        return { fieldPath: subcategory === 'beaten' ? 'goalsBeaten' : 'goalsAchieved', currentFieldPath: null };
+    } else {
+        if (subcategory === 'firstTry') return { fieldPath: 'longestFirstTryStreak', currentFieldPath: 'currentFirstTryStreak' };
+        if (subcategory === 'goalAchieved') return { fieldPath: 'longestTieBotStreak', currentFieldPath: 'currentTieBotStreak' };
+        return { fieldPath: 'longestPuzzleCompletedStreak', currentFieldPath: 'currentPuzzleCompletedStreak' };
+    }
+}
+
+/**
+ * Look up the requesting user's rank from a pre-computed snapshot.
+ * Returns undefined if the user is a guest, already in the top 10, or not found.
+ */
+async function resolveRequesterFromSnapshot(
+    requesterId: string,
+    snapshotEntries: Array<{ userId: string; username: string; value: number; currentValue?: number }>,
+    userRanks: Record<string, number>,
+    checkCurrent: boolean,
+    category: string,
+    subcategory: string,
+    normalizedDifficulty: string | null,
+): Promise<LeaderboardEntryV2 | undefined> {
+    if (requesterId === "guest/unauthenticated") return undefined;
+
+    // Already in the top 10 -- shown in the main leaderboard, no separate entry needed
+    if (snapshotEntries.slice(0, 10).some(e => e.userId === requesterId)) return undefined;
+
+    // In the stored entries (top 100) -- use snapshot data directly
+    const inEntries = snapshotEntries.findIndex(e => e.userId === requesterId);
+    if (inEntries >= 0) {
+        const entry = snapshotEntries[inEntries];
+        return {
+            userId: entry.userId,
+            username: entry.username,
+            value: entry.value,
+            rank: inEntries + 1,
+            isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined,
+        };
+    }
+
+    // Ranked 101+ -- do a point read for their value and display name
+    if (userRanks[requesterId] === undefined) return undefined;
+
+    const requesterRank = userRanks[requesterId];
+    const isLevelAgnostic = category === 'score'
+        || (category === 'streaks' && subcategory === 'puzzleCompleted')
+        || !normalizedDifficulty;
+    const targetDocId = isLevelAgnostic ? 'levelAgnostic' : normalizedDifficulty;
+
+    try {
+        const [requesterDoc, requesterAuth] = await Promise.all([
+            db.doc(`userPuzzleHistory/${requesterId}/leaderboard/${targetDocId}`).get(),
+            admin.auth().getUser(requesterId),
+        ]);
+
+        if (!requesterDoc.exists) return undefined;
+
+        const requesterData = requesterDoc.data() as Record<string, unknown>;
+        const { fieldPath, currentFieldPath } = getLeaderboardFieldPaths(category, subcategory);
+
+        const value = typeof requesterData[fieldPath] === 'number' ? (requesterData[fieldPath] as number) : 0;
+        const displayName = requesterAuth.displayName || `User_${requesterId.substring(0, 6)}`;
+
+        let isCurrent: boolean | undefined;
+        if (checkCurrent && currentFieldPath) {
+            const cv = typeof requesterData[currentFieldPath] === 'number' ? (requesterData[currentFieldPath] as number) : undefined;
+            isCurrent = cv !== undefined ? cv === value : undefined;
+        }
+
+        return {
+            userId: requesterId,
+            username: displayName,
+            value,
+            rank: requesterRank,
+            isCurrent,
+        };
+    } catch (pointReadError) {
+        logger.warn(`getGlobalLeaderboardV2: Failed point read for requester ${requesterId}`, pointReadError);
+        return undefined;
+    }
+}
+
+/**
+ * Recompute ELO aggregates from eloScoreByDay map.
+ * This ensures scores are accurate even if the user hasn't played recently,
+ * so old scores properly "fall off" the 7-day and 30-day windows.
+ */
+function computeEloAggregates(eloScoreByDay: Record<string, unknown>, today: Date): {
+    eloScoreAllTime: number;
+    eloScoreLast30: number;
+    eloScoreLast7: number;
+} {
+    let eloAllTime = 0;
+    let eloLast30 = 0;
+    let eloLast7 = 0;
+
+    const todayUTC = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    const start30 = new Date(todayUTC);
+    start30.setUTCDate(start30.getUTCDate() - 29);
+    const start7 = new Date(todayUTC);
+    start7.setUTCDate(start7.getUTCDate() - 6);
+
+    for (const [dayStr, val] of Object.entries(eloScoreByDay)) {
+        if (typeof val !== 'number' || isNaN(val)) continue;
+        eloAllTime += val;
+        try {
+            const parts = dayStr.split('-');
+            if (parts.length === 3) {
+                const dUTC = Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                const d = new Date(dUTC);
+                if (!isNaN(d.getTime())) {
+                    if (d >= start30) eloLast30 += val;
+                    if (d >= start7) eloLast7 += val;
+                }
+            }
+        } catch {
+            // Skip malformed date entries
+        }
+    }
+
+    return { eloScoreAllTime: eloAllTime, eloScoreLast30: eloLast30, eloScoreLast7: eloLast7 };
+}
+
 export const getGlobalLeaderboardV2 = onCall(
     {
         memory: "256MiB",
@@ -1594,7 +1724,7 @@ export const getGlobalLeaderboardV2 = onCall(
             }
 
             // Try to read from pre-computed snapshot (single document read)
-            const snapshotRef = db.collection("leaderboardSnapshots").doc(snapshotKey);
+            const snapshotRef = db.collection("leaderboards").doc(snapshotKey);
             const snapshotDoc = await snapshotRef.get();
 
             if (snapshotDoc.exists) {
@@ -1605,6 +1735,7 @@ export const getGlobalLeaderboardV2 = onCall(
                     value: number;
                     currentValue?: number;
                 }>;
+                const userRanks = (snapshotData.userRanks || {}) as Record<string, number>;
 
                 const leaderboard: LeaderboardEntryV2[] = snapshotEntries.slice(0, 10).map((entry, index) => ({
                     userId: entry.userId,
@@ -1614,20 +1745,10 @@ export const getGlobalLeaderboardV2 = onCall(
                     isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined,
                 }));
 
-                let requesterEntry: LeaderboardEntryV2 | undefined;
-                if (requesterId !== "guest/unauthenticated") {
-                    const requesterIndex = snapshotEntries.findIndex(e => e.userId === requesterId);
-                    if (requesterIndex >= 10) {
-                        const entry = snapshotEntries[requesterIndex];
-                        requesterEntry = {
-                            userId: entry.userId,
-                            username: entry.username,
-                            value: entry.value,
-                            rank: requesterIndex + 1,
-                            isCurrent: checkCurrent && entry.currentValue !== undefined ? entry.currentValue === entry.value : undefined,
-                        };
-                    }
-                }
+                const requesterEntry = await resolveRequesterFromSnapshot(
+                    requesterId, snapshotEntries, userRanks, checkCurrent,
+                    category, subcategory, normalizedDifficulty,
+                );
 
                 logger.info(`getGlobalLeaderboardV2: Served from snapshot '${snapshotKey}', ${leaderboard.length} entries, requester: ${!!requesterEntry}`);
                 return { success: true, leaderboard, requesterEntry };
@@ -1636,17 +1757,7 @@ export const getGlobalLeaderboardV2 = onCall(
             // --- Fallback: no snapshot exists yet, do full collection group scan ---
             logger.warn(`getGlobalLeaderboardV2: No snapshot for '${snapshotKey}', falling back to full scan`);
 
-            let fieldPath: string;
-            let currentFieldPath: string | null = null;
-            if (category === 'score') {
-                fieldPath = subcategory === 'last7' ? 'eloScoreLast7' : subcategory === 'last30' ? 'eloScoreLast30' : 'eloScoreAllTime';
-            } else if (category === 'goals') {
-                fieldPath = subcategory === 'beaten' ? 'goalsBeaten' : 'goalsAchieved';
-            } else {
-                if (subcategory === 'firstTry') { fieldPath = 'longestFirstTryStreak'; currentFieldPath = 'currentFirstTryStreak'; }
-                else if (subcategory === 'goalAchieved') { fieldPath = 'longestTieBotStreak'; currentFieldPath = 'currentTieBotStreak'; }
-                else { fieldPath = 'longestPuzzleCompletedStreak'; currentFieldPath = 'currentPuzzleCompletedStreak'; }
-            }
+            const { fieldPath, currentFieldPath } = getLeaderboardFieldPaths(category, subcategory);
 
             let targetDocId: string;
             if (category === 'score' || (category === 'streaks' && subcategory === 'puzzleCompleted')) {
@@ -3481,7 +3592,7 @@ export const updateWeeklyHardestPuzzle = onSchedule(
 /**
  * Scheduled Cloud Function to pre-compute leaderboard snapshots.
  * Runs every 4 hours. Performs a single collection group scan and stores
- * the top entries for all 16 leaderboard combinations in leaderboardSnapshots/.
+ * the top entries for all 16 leaderboard combinations in leaderboards/.
  * This avoids the expensive full scan on every getGlobalLeaderboardV2 request.
  */
 export const precomputeLeaderboards = onSchedule(
@@ -3521,14 +3632,35 @@ export const precomputeLeaderboards = onSchedule(
             const allTopUserIds = new Set<string>();
 
             // Process each leaderboard config
-            const snapshots = new Map<string, LeaderboardSnapshotEntry[]>();
+            // Store full data per config: top 100 entries, userRanks map, and total count
+            const snapshots = new Map<string, {
+                top100: LeaderboardSnapshotEntry[];
+                userRanks: Record<string, number>;
+                totalEntries: number;
+            }>();
+
+            const today = new Date();
 
             for (const config of configs) {
                 const docs = docsByTargetId.get(config.targetDocId) || [];
                 const entries: LeaderboardSnapshotEntry[] = [];
 
+                const isScoreConfig = config.key.startsWith('score_');
+
                 for (const { userId, data } of docs) {
-                    const value = typeof data[config.fieldPath] === 'number' ? (data[config.fieldPath] as number) : null;
+                    let value: number | null;
+
+                    if (isScoreConfig && data['eloScoreByDay'] && typeof data['eloScoreByDay'] === 'object') {
+                        // Recompute from eloScoreByDay so old scores fall off the 7/30-day windows
+                        const aggregates = computeEloAggregates(
+                            data['eloScoreByDay'] as Record<string, unknown>,
+                            today
+                        );
+                        value = aggregates[config.fieldPath as keyof typeof aggregates];
+                    } else {
+                        value = typeof data[config.fieldPath] === 'number' ? (data[config.fieldPath] as number) : null;
+                    }
+
                     if (value === null || isNaN(value) || value === 0) continue;
 
                     const entry: LeaderboardSnapshotEntry = { userId, value };
@@ -3545,9 +3677,20 @@ export const precomputeLeaderboards = onSchedule(
                 // Sort descending by value
                 entries.sort((a, b) => b.value - a.value);
 
-                // Keep top 100 for rank lookup (top 10 served + buffer for requester rank)
+                // Count total and build rank map BEFORE slicing to top 100
+                const totalEntries = entries.length;
+                const userRanks: Record<string, number> = {};
+                for (let i = 0; i < entries.length; i++) {
+                    userRanks[entries[i].userId] = i + 1;
+                }
+
+                if (totalEntries > 10000) {
+                    logger.warn(`precomputeLeaderboards: Large userRanks map for '${config.key}': ${totalEntries} entries. Consider pagination if this exceeds 1MiB doc limit.`);
+                }
+
+                // Keep top 100 for the entries array stored in the snapshot
                 const top100 = entries.slice(0, 100);
-                snapshots.set(config.key, top100);
+                snapshots.set(config.key, { top100, userRanks, totalEntries });
 
                 // Track userIds for display name resolution
                 for (const e of top100) {
@@ -3584,17 +3727,18 @@ export const precomputeLeaderboards = onSchedule(
 
             // Write all snapshots to Firestore
             const batch = db.batch();
-            for (const [key, entries] of snapshots) {
-                const snapshotRef = db.collection("leaderboardSnapshots").doc(key);
+            for (const [key, { top100, userRanks, totalEntries }] of snapshots) {
+                const snapshotRef = db.collection("leaderboards").doc(key);
                 batch.set(snapshotRef, {
-                    entries: entries.map(e => ({
+                    entries: top100.map(e => ({
                         userId: e.userId,
                         username: userDisplayNames.get(e.userId) || `User_${e.userId.substring(0, 6)}`,
                         value: e.value,
                         ...(e.currentValue !== undefined ? { currentValue: e.currentValue } : {}),
                     })),
+                    userRanks,
                     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                    totalEntries: entries.length,
+                    totalEntries,
                 });
             }
             await batch.commit();
