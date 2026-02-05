@@ -95,13 +95,30 @@ const LandingScreen: React.FC = () => {
     e.preventDefault();
     setAuthError(null);
     setAuthSuccess(null);
+
+    // Client-side validation
+    if (authMode === 'signup') {
+      if (!displayName || displayName.trim().length === 0) {
+        setAuthError('Please enter a display name.');
+        return;
+      }
+      if (displayName.trim().length > 50) {
+        setAuthError('Display name must be 50 characters or fewer.');
+        return;
+      }
+    }
+    if (password.length < 6) {
+      setAuthError('Password must be at least 6 characters.');
+      return;
+    }
+
     setAuthLoading(true);
 
     try {
       if (authMode === 'signin') {
         await signIn(email, password);
       } else if (authMode === 'signup') {
-        await signUp(email, password, displayName);
+        await signUp(email, password, displayName.trim());
       }
       setShowAuthModal(false);
       setTimeout(() => setShowLandingPage(false), 500);
