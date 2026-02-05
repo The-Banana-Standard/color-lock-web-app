@@ -4,6 +4,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { logger as v2Logger } from "firebase-functions/v2";
 import { calculateEloScore } from "./eloUtils";
+import { assertAdmin } from "./adminAuth";
 import { GameStatistics, defaultStats } from "../../src/types/stats";
 import { DifficultyLevel } from "../../src/types/settings";
 import { DateTime } from "luxon";
@@ -2422,7 +2423,8 @@ export const getUsageStats = onCall(
         ...getAppCheckConfig(),
     },
     async (request) => {
-        const userId = request.auth?.uid || "guest/unauthenticated";
+        // Only allow admin users
+        const userId = assertAdmin(request);
         const { startDate, endDate, aggregateByMonth = false } = (request.data || {}) as GetUsageStatsRequest;
 
         logger.info(`getUsageStats: Called by ${userId}, range: ${startDate} to ${endDate}, aggregateByMonth: ${aggregateByMonth}`);
@@ -2924,12 +2926,9 @@ export const backfillUsageStats = onCall(
         ...getAppCheckConfig(),
     },
     async (request) => {
-        // Only allow authenticated users (you may want to add admin check)
-        if (!request.auth) {
-            throw new HttpsError("unauthenticated", "Authentication required.");
-        }
+        // Only allow admin users
+        const userId = assertAdmin(request);
 
-        const userId = request.auth.uid;
         const { startDate, endDate, dryRun = true } = (request.data || {}) as BackfillUsageStatsRequest;
 
         logger.info(`backfillUsageStats: Called by ${userId}, dryRun: ${dryRun}`);
