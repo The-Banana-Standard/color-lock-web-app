@@ -1721,39 +1721,51 @@ export const sendDailyPuzzleReminders = onSchedule(
 
             const tokenToUsersMap = new Map<string, UserInfo[]>();
 
-            // First pass: Group users by FCM token and check if they're anonymous
+            // First pass: Collect valid users and their FCM tokens
+            const validUsers: { userId: string; fcmToken: string; timezone: string }[] = [];
             for (const userDoc of usersSnapshot.docs) {
                 const userId = userDoc.id;
                 const userData = userDoc.data();
                 const fcmToken = userData.fcmToken;
                 const timezone = userData.timezone;
 
-                // Validate required fields
                 if (!fcmToken || !timezone) {
                     skippedCount++;
                     continue;
                 }
 
+                validUsers.push({ userId, fcmToken, timezone });
+            }
+
+            // Batch fetch auth info (up to 100 per call) instead of N+1 individual calls
+            const authInfoMap = new Map<string, boolean>(); // uid -> isAnonymous
+            const BATCH_SIZE = 100;
+            for (let i = 0; i < validUsers.length; i += BATCH_SIZE) {
+                const batch = validUsers.slice(i, i + BATCH_SIZE);
+                const identifiers = batch.map(u => ({ uid: u.userId }));
                 try {
-                    // Check if user is anonymous via Firebase Auth
-                    const authUser = await admin.auth().getUser(userId);
-                    const isAnonymous = authUser.providerData.length === 0; // Anonymous users have no providers
-
-                    const userInfo: UserInfo = {
-                        userId,
-                        fcmToken,
-                        timezone,
-                        isAnonymous
-                    };
-
-                    if (!tokenToUsersMap.has(fcmToken)) {
-                        tokenToUsersMap.set(fcmToken, []);
+                    const result = await admin.auth().getUsers(identifiers);
+                    for (const user of result.users) {
+                        authInfoMap.set(user.uid, user.providerData.length === 0);
                     }
-                    tokenToUsersMap.get(fcmToken)!.push(userInfo);
+                    for (const notFound of result.notFound) {
+                        logger.warn(`sendDailyPuzzleReminders: User not found in Auth: ${JSON.stringify(notFound)}`);
+                    }
                 } catch (authError) {
-                    logger.warn(`sendDailyPuzzleReminders: Failed to fetch auth info for user ${userId}:`, authError);
-                    skippedCount++;
+                    logger.warn(`sendDailyPuzzleReminders: Failed to batch fetch auth info:`, authError);
                 }
+            }
+
+            // Group users by FCM token
+            for (const { userId, fcmToken, timezone } of validUsers) {
+                const isAnonymous = authInfoMap.get(userId) ?? true; // Default to anonymous if lookup failed
+
+                const userInfo: UserInfo = { userId, fcmToken, timezone, isAnonymous };
+
+                if (!tokenToUsersMap.has(fcmToken)) {
+                    tokenToUsersMap.set(fcmToken, []);
+                }
+                tokenToUsersMap.get(fcmToken)!.push(userInfo);
             }
 
             // Second pass: Select one user per FCM token (prefer non-anonymous)
