@@ -157,7 +157,6 @@ export interface UsageStatsEntry {
   puzzleId: string;
   uniqueUsers: number;
   totalAttempts: number;
-  userIds?: string[]; // Optional: array of user IDs for proper monthly aggregation
   // Streak counts (users with 3+ day streaks ending on this day)
   puzzleStreak3PlusCount?: number;
   easyGoalStreak3PlusCount?: number;
