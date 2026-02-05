@@ -1,0 +1,100 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.error-boundary-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, $overlay-opacity);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: $spacing-md;
+}
+
+.error-boundary-content {
+  background: $bg-warm-taupe;
+  border-radius: $border-radius-large;
+  padding: $spacing-xl $spacing-lg;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: $shadow-modal;
+
+  @include dark-mode {
+    background: $bg-dark-elevated;
+  }
+}
+
+.error-boundary-icon {
+  font-size: 3rem;
+  background: linear-gradient(135deg, $gradient-pink-start, $gradient-coral-end);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: $spacing-md;
+}
+
+.error-boundary-title {
+  font-family: $font-family-display;
+  font-size: 1.4rem;
+  color: $color-text-primary;
+  margin: 0 0 $spacing-sm;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
+}
+
+.error-boundary-message {
+  color: $color-description-text;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0 0 $spacing-lg;
+}
+
+.error-boundary-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.error-boundary-reload {
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  border-radius: $border-radius-small;
+  background: linear-gradient(135deg, $gradient-blue-start, $gradient-blue-end);
+  color: white;
+  font-family: $font-family-display;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: opacity $transition-normal;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.error-boundary-dismiss {
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid $color-primary-gray;
+  border-radius: $border-radius-small;
+  background: transparent;
+  color: $color-primary-gray;
+  font-family: $font-family-display;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity $transition-normal;
+
+  &:hover {
+    opacity: 0.7;
+  }
+
+  @include dark-mode {
+    border-color: $color-description-text;
+    color: $color-description-text;
+  }
+}
