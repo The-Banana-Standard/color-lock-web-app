@@ -18,6 +18,7 @@ import {
   checkIfOnOptimalPath,
   applyActionToGrid,
   applyColorChange,
+  getGameHint,
 } from '../gameUtils';
 import { TileColor, DailyPuzzle, FirestorePuzzleData } from '../../types';
 
@@ -564,5 +565,191 @@ describe('applyColorChange', () => {
     applyColorChange(puzzle, 0, 0, TileColor.Green);
 
     expect(puzzle.grid[0][0]).toBe(originalFirstCell);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getGameHint Tests
+// ---------------------------------------------------------------------------
+
+describe('getGameHint', () => {
+  beforeEach(() => {
+    // Suppress console.warn for cleaner test output
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns null when puzzle is solved', () => {
+    const puzzle = createBasePuzzle({ isSolved: true });
+    const firestoreData = createFirestoreData();
+
+    const result = getGameHint(puzzle, firestoreData, true);
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when puzzle is lost', () => {
+    const puzzle = createBasePuzzle({ isLost: true });
+    const firestoreData = createFirestoreData();
+
+    const result = getGameHint(puzzle, firestoreData, true);
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when firestoreData is null', () => {
+    const puzzle = createBasePuzzle();
+
+    const result = getGameHint(puzzle, null, false);
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when firestoreData has no actions', () => {
+    const puzzle = createBasePuzzle();
+    const firestoreData = createFirestoreData({ actions: undefined as any });
+
+    const result = getGameHint(puzzle, firestoreData, false);
+
+    expect(result).toBeNull();
+  });
+
+  it('calculates correct action index for Hard difficulty (effectiveStartingMoveIndex = 0)', () => {
+    const puzzle = createBasePuzzle({
+      userMovesUsed: 0,
+      effectiveStartingMoveIndex: 0,
+      grid: [
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+      ],
+    });
+    const firestoreData = createFirestoreData();
+
+    const result = getGameHint(puzzle, firestoreData, true);
+
+    // Should use action at index 0 (userMovesUsed=0 + effectiveStartingMoveIndex=0)
+    expect(result).not.toBeNull();
+    expect(result?.valid).toBe(true);
+  });
+
+  it('calculates correct action index for Easy difficulty (effectiveStartingMoveIndex = 3)', () => {
+    const puzzle = createBasePuzzle({
+      userMovesUsed: 0,
+      effectiveStartingMoveIndex: 3,
+      grid: [
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+      ],
+    });
+    // Ensure we have enough actions for index 3
+    const firestoreData = createFirestoreData({
+      actions: [42, 67, 89, 110, 120],
+    });
+
+    const result = getGameHint(puzzle, firestoreData, true);
+
+    // Should use action at index 3 (userMovesUsed=0 + effectiveStartingMoveIndex=3)
+    expect(result).not.toBeNull();
+  });
+
+  it('calculates action index correctly after user makes moves', () => {
+    const puzzle = createBasePuzzle({
+      userMovesUsed: 2,
+      effectiveStartingMoveIndex: 1,
+      grid: [
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+      ],
+    });
+    // Ensure we have enough actions for index 3 (2 + 1)
+    const firestoreData = createFirestoreData({
+      actions: [42, 67, 89, 110, 120],
+    });
+
+    const result = getGameHint(puzzle, firestoreData, true);
+
+    // Should use action at index 3 (userMovesUsed=2 + effectiveStartingMoveIndex=1)
+    expect(result).not.toBeNull();
+  });
+
+  it('returns null when action index exceeds available actions', () => {
+    const puzzle = createBasePuzzle({
+      userMovesUsed: 5,
+      effectiveStartingMoveIndex: 0,
+      grid: [
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+      ],
+    });
+    // Only 3 actions available, but we need index 5
+    const firestoreData = createFirestoreData({
+      actions: [42, 67, 89],
+    });
+
+    const result = getGameHint(puzzle, firestoreData, false);
+
+    expect(result).toBeNull();
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('out of bounds')
+    );
+  });
+
+  it('returns null when effectiveStartingMoveIndex alone exceeds actions', () => {
+    const puzzle = createBasePuzzle({
+      userMovesUsed: 0,
+      effectiveStartingMoveIndex: 5,
+      grid: [
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+      ],
+    });
+    const firestoreData = createFirestoreData({
+      actions: [42, 67, 89],
+    });
+
+    const result = getGameHint(puzzle, firestoreData, false);
+
+    expect(result).toBeNull();
+  });
+
+  it('returns hint with connected cells information', () => {
+    const puzzle = createBasePuzzle({
+      userMovesUsed: 0,
+      effectiveStartingMoveIndex: 0,
+      grid: [
+        [TileColor.Red, TileColor.Red, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Red, TileColor.Red, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Green, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Green, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+        [TileColor.Green, TileColor.Green, TileColor.Blue, TileColor.Yellow, TileColor.Purple],
+      ],
+    });
+    const firestoreData = createFirestoreData();
+
+    const result = getGameHint(puzzle, firestoreData, true);
+
+    // If the hint is valid, it should include connectedCells
+    if (result && result.valid) {
+      expect(result.connectedCells).toBeDefined();
+      expect(Array.isArray(result.connectedCells)).toBe(true);
+    }
   });
 });

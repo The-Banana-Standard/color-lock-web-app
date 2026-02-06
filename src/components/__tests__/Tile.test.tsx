@@ -339,23 +339,18 @@ describe('Tile - Keyboard Navigation', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('prevents default for Enter key to avoid form submission', () => {
+  it('triggers onClick when Enter key is pressed via native event', () => {
     const onClick = vi.fn();
-    renderTile({ onClick });
+    renderTile({ onClick, row: 0, col: 0 });
 
     const tile = screen.getByRole('button');
-    const event = new KeyboardEvent('keydown', {
-      key: 'Enter',
-      bubbles: true,
-    });
-    const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
 
-    tile.dispatchEvent(event);
+    // Use fireEvent to simulate the keydown event
+    // This verifies that Enter key triggers the click handler
+    fireEvent.keyDown(tile, { key: 'Enter', code: 'Enter' });
 
-    // Note: In the actual component, preventDefault is called
-    // Testing this through fireEvent doesn't capture it the same way
-    // This test documents the expected behavior
-    expect(true).toBe(true);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onClick).toHaveBeenCalledWith(0, 0);
   });
 });
 

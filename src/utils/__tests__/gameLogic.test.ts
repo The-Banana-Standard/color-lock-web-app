@@ -8,15 +8,17 @@
  * - convertFirestoreGridToArray / convertArrayToFirestoreGrid: grid conversions
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   floodFill,
   findLargestRegion,
   isBoardUnified,
   convertFirestoreGridToArray,
   convertArrayToFirestoreGrid,
+  generatePuzzleFromDB,
 } from '../gameLogic';
-import { TileColor, PuzzleGrid } from '../../types';
+import { TileColor, PuzzleGrid, FirestorePuzzleData } from '../../types';
+import { AppSettings, DifficultyLevel } from '../../types/settings';
 
 // ---------------------------------------------------------------------------
 // Test Data Helpers
@@ -449,5 +451,264 @@ describe('convertArrayToFirestoreGrid', () => {
     const roundTrippedGrid = convertFirestoreGridToArray(firestoreGrid);
 
     expect(roundTrippedGrid).toEqual(originalGrid);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generatePuzzleFromDB Tests
+// ---------------------------------------------------------------------------
+
+describe('generatePuzzleFromDB', () => {
+  // Helper to create a 5x5 Firestore grid
+  function create5x5FirestoreGrid(pattern: string[]): PuzzleGrid {
+    const colorMap: Record<string, TileColor> = {
+      R: TileColor.Red,
+      G: TileColor.Green,
+      B: TileColor.Blue,
+      Y: TileColor.Yellow,
+      P: TileColor.Purple,
+      O: TileColor.Orange,
+    };
+    const result: PuzzleGrid = {};
+    pattern.forEach((row, i) => {
+      result[i.toString()] = row.split('').map((char) => colorMap[char] || TileColor.Red);
+    });
+    return result;
+  }
+
+  // Helper to create Firestore puzzle data
+  function createFirestorePuzzleData(overrides: Partial<FirestorePuzzleData> = {}): FirestorePuzzleData {
+    return {
+      algoScore: 5,
+      targetColor: TileColor.Blue,
+      states: [
+        create5x5FirestoreGrid([
+          'RGBYR',
+          'RGBYR',
+          'RGBYR',
+          'RGBYR',
+          'RGBYR',
+        ]),
+        create5x5FirestoreGrid([
+          'GGBYR',
+          'GGBYR',
+          'RGBYR',
+          'RGBYR',
+          'RGBYR',
+        ]),
+        create5x5FirestoreGrid([
+          'BBBYR',
+          'BBBYR',
+          'BGBYR',
+          'RGBYR',
+          'RGBYR',
+        ]),
+        create5x5FirestoreGrid([
+          'BBBYR',
+          'BBBYR',
+          'BBBYR',
+          'BGBYR',
+          'RGBYR',
+        ]),
+        create5x5FirestoreGrid([
+          'BBBYR',
+          'BBBYR',
+          'BBBYR',
+          'BBBYR',
+          'BGBYR',
+        ]),
+      ],
+      actions: [121, 122, 123, 124, 125], // 5 actions for full game
+      colorMap: [0, 1, 2, 3, 4, 5],
+      ...overrides,
+    };
+  }
+
+  // Helper to create default settings
+  function createSettings(difficulty: DifficultyLevel): AppSettings {
+    return {
+      highContrastMode: false,
+      colorBlindMode: 'none' as any,
+      customColorScheme: {},
+      highlightLargestRegion: true,
+      enableAnimations: true,
+      enableSoundEffects: false,
+      showLockedRegionCounter: true,
+      difficultyLevel: difficulty,
+    };
+  }
+
+  beforeEach(() => {
+    // Suppress console.log/warn for cleaner test output
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Hard difficulty: starts with original grid (no actions applied)', () => {
+    const firestoreData = createFirestorePuzzleData();
+    const settings = createSettings(DifficultyLevel.Hard);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    // Should start at the original state (index 0)
+    expect(result.effectiveStartingMoveIndex).toBe(0);
+    // Grid should match the first state from Firestore
+    expect(result.grid[0][0]).toBe(TileColor.Red);
+    expect(result.grid[0][1]).toBe(TileColor.Green);
+    expect(result.userMovesUsed).toBe(0);
+  });
+
+  it('Medium difficulty: applies 1 action to starting grid', () => {
+    // Create a simple puzzle where we know the action effect
+    const initialGrid = create5x5FirestoreGrid([
+      'RRGGG',
+      'RRGGG',
+      'GGGGG',
+      'GGGGG',
+      'GGGGG',
+    ]);
+    const afterFirstAction = create5x5FirestoreGrid([
+      'GGGGG',
+      'GGGGG',
+      'GGGGG',
+      'GGGGG',
+      'GGGGG',
+    ]);
+    const firestoreData = createFirestorePuzzleData({
+      states: [initialGrid, afterFirstAction],
+      // Action 121 changes (0,0) to Green: row=0, col=0, colorIndex=1 (Green)
+      actions: [121, 122],
+    });
+    const settings = createSettings(DifficultyLevel.Medium);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    // Should have applied 1 action
+    expect(result.effectiveStartingMoveIndex).toBe(1);
+    // User starts with 0 moves regardless
+    expect(result.userMovesUsed).toBe(0);
+  });
+
+  it('Easy difficulty: applies 3 actions to starting grid', () => {
+    const firestoreData = createFirestorePuzzleData(); // Has 5 actions
+    const settings = createSettings(DifficultyLevel.Easy);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    // Should have applied 3 actions
+    expect(result.effectiveStartingMoveIndex).toBe(3);
+    expect(result.userMovesUsed).toBe(0);
+  });
+
+  it('handles insufficient actions for Medium difficulty gracefully', () => {
+    const firestoreData = createFirestorePuzzleData({
+      actions: [], // No actions available
+    });
+    const settings = createSettings(DifficultyLevel.Medium);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    // Should fall back to Hard behavior (no actions applied)
+    expect(result.effectiveStartingMoveIndex).toBe(0);
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Not enough actions')
+    );
+  });
+
+  it('handles insufficient actions for Easy difficulty gracefully (applies fewer moves)', () => {
+    const firestoreData = createFirestorePuzzleData({
+      actions: [121, 122], // Only 2 actions available, Easy needs 3
+    });
+    const settings = createSettings(DifficultyLevel.Easy);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    // Should apply as many actions as possible (2)
+    expect(result.effectiveStartingMoveIndex).toBe(2);
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Not enough actions')
+    );
+  });
+
+  it('skipDifficultyAdjustments option bypasses difficulty-based actions', () => {
+    const firestoreData = createFirestorePuzzleData();
+    const settings = createSettings(DifficultyLevel.Easy);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings, {
+      skipDifficultyAdjustments: true,
+    });
+
+    // Should not apply any actions despite Easy difficulty
+    expect(result.effectiveStartingMoveIndex).toBe(0);
+    // Grid should match the original first state
+    expect(result.grid[0][0]).toBe(TileColor.Red);
+  });
+
+  it('sets correct lossThreshold based on difficulty', () => {
+    const firestoreData = createFirestorePuzzleData();
+
+    const easyResult = generatePuzzleFromDB(firestoreData, '2026-02-05', createSettings(DifficultyLevel.Easy));
+    const mediumResult = generatePuzzleFromDB(firestoreData, '2026-02-05', createSettings(DifficultyLevel.Medium));
+    const hardResult = generatePuzzleFromDB(firestoreData, '2026-02-05', createSettings(DifficultyLevel.Hard));
+
+    expect(easyResult.lossThreshold).toBe(8);
+    expect(mediumResult.lossThreshold).toBe(13);
+    expect(hardResult.lossThreshold).toBe(18);
+  });
+
+  it('preserves original algoScore regardless of difficulty', () => {
+    const firestoreData = createFirestorePuzzleData({ algoScore: 7 });
+    const settings = createSettings(DifficultyLevel.Easy);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    expect(result.algoScore).toBe(7);
+  });
+
+  it('sets targetColor from Firestore data', () => {
+    const firestoreData = createFirestorePuzzleData({ targetColor: TileColor.Purple });
+    const settings = createSettings(DifficultyLevel.Hard);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    expect(result.targetColor).toBe(TileColor.Purple);
+  });
+
+  it('sets dateString correctly', () => {
+    const firestoreData = createFirestorePuzzleData();
+    const settings = createSettings(DifficultyLevel.Hard);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    expect(result.dateString).toBe('2026-02-05');
+  });
+
+  it('initializes puzzle state correctly', () => {
+    const firestoreData = createFirestorePuzzleData();
+    const settings = createSettings(DifficultyLevel.Hard);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    expect(result.isSolved).toBe(false);
+    expect(result.isLost).toBe(false);
+    expect(result.userMovesUsed).toBe(0);
+    expect(result.bestScoreUsed).toBeNull();
+    expect(result.timesPlayed).toBe(0);
+    expect(result.totalMovesForThisBoard).toBe(0);
+  });
+
+  it('calculates lockedCells based on difficulty-adjusted starting grid', () => {
+    const firestoreData = createFirestorePuzzleData();
+    const settings = createSettings(DifficultyLevel.Hard);
+
+    const result = generatePuzzleFromDB(firestoreData, '2026-02-05', settings);
+
+    // lockedCells should be the largest region in the starting grid
+    expect(result.lockedCells).toBeInstanceOf(Set);
+    expect(result.lockedCells.size).toBeGreaterThan(0);
   });
 });
