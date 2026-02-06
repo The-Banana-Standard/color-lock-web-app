@@ -382,15 +382,16 @@ You can inspect the state of the emulators via the Emulator UI: http://localhost
 
 7. Testing
 Unit & Integration Tests
-The project is set up with Vitest (vitest.config.mjs, package.json).
+The project uses Vitest with jsdom for unit and integration testing.
 
-Basic configuration is in src/setupTests.ts.
+**Test coverage includes:**
 
-Currently, only a placeholder test (App.test.tsx) exists.
+*   **Utility functions:** gameLogic, gameUtils, colorUtils, dateUtils, hintUtils, autocompleteUtils
+*   **Components:** Tile, GameGrid (using @testing-library/react)
 
-To run tests: npm test
+To run tests: `npm test`
 
-Recommendation: Add more tests using Vitest and @testing-library/react for components, hooks, and utility functions. Mock Firebase interactions where necessary.
+To run with coverage: `npm test -- --coverage`
 
 Emulator Testing (Functions)
 This is the primary way to test the full application flow locally.
