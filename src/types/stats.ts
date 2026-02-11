@@ -1,1 +1,2 @@
-export { GameStatistics, defaultStats, LeaderboardEntry } from '../../shared/types'; 
+export type { GameStatistics, LeaderboardEntry } from '../../shared/types';
+export { defaultStats } from '../../shared/types';

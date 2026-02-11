@@ -1,0 +1,1208 @@
+@use '../abstracts' as *;
+@use 'sass:color';
+
+// ===========================================
+// TUTORIAL MODAL
+// ===========================================
+
+.tutorial-modal-backdrop {
+  @include modal-backdrop;
+}
+
+.tutorial-modal {
+  background-color: #d8d3bb;
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(37, 37, 37, 0.2);
+  width: min(94vw, 360px);
+  min-height: min(86vh, 690px);
+  max-height: 92vh;
+  overflow-y: auto;
+  position: relative;
+  animation: tutorialModalFadeIn $transition-slow $ease-out;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+  }
+}
+
+@keyframes tutorialModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.tutorial-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 12px;
+  width: 42px;
+  height: 42px;
+  border: none;
+  background-color: rgba($color-primary-gray, 0.13);
+  color: rgba($color-primary-gray, 0.65);
+  border-radius: $border-radius-circle;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 23px;
+  transition: all $transition-normal $ease-default;
+  z-index: 10;
+
+  &:hover {
+    background-color: rgba($color-primary-gray, 0.2);
+    color: rgba($color-primary-gray, 0.9);
+  }
+
+  @include dark-mode {
+    background-color: rgba($color-light-taupe, 0.1);
+    color: $color-light-taupe;
+
+    &:hover {
+      background-color: rgba($gradient-pink-start, 0.3);
+      color: $gradient-pink-start;
+    }
+  }
+}
+
+.tutorial-modal-content {
+  padding: 22px 22px 16px;
+  padding-top: 64px;
+}
+
+// ===========================================
+// PHASE INDICATOR
+// ===========================================
+
+.tutorial-phase-indicator {
+  display: none;
+  justify-content: center;
+  gap: $spacing-xs;
+  padding: $spacing-md;
+  padding-bottom: 0;
+}
+
+.tutorial-phase-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: $border-radius-circle;
+  background-color: rgba($color-primary-gray, 0.2);
+  transition: all $transition-normal $ease-default;
+
+  &--active {
+    background-color: $gradient-blue-start;
+    transform: scale(1.2);
+  }
+
+  &--completed {
+    background-color: $gradient-green-start;
+  }
+
+  @include dark-mode {
+    background-color: rgba($color-light-taupe, 0.2);
+
+    &--active {
+      background-color: $gradient-blue-start;
+    }
+
+    &--completed {
+      background-color: $gradient-green-start;
+    }
+  }
+}
+
+// ===========================================
+// PHASE HEADER
+// ===========================================
+
+.tutorial-phase-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.tutorial-phase-title {
+  font-family: $font-family-display;
+  font-size: $font-size-modal-title;
+  font-weight: $font-weight-bolder;
+  color: $color-text-primary;
+  margin: 0;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
+}
+
+.tutorial-phase-message {
+  font-size: $font-size-base;
+  color: $color-description-text;
+  margin: 0;
+  line-height: 1.5;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
+}
+
+// ===========================================
+// TUTORIAL GRID
+// ===========================================
+
+.tutorial-grid-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin: 22px 0 14px;
+}
+
+.tutorial-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tutorial-grid-gap, 8px);
+}
+
+.tutorial-grid__row {
+  display: flex;
+  gap: var(--tutorial-grid-gap, 8px);
+  width: 100%;
+}
+
+// ===========================================
+// TUTORIAL TILE
+// ===========================================
+
+.tutorial-tile {
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all $transition-normal $ease-default;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba($color-white, 0.04);
+
+  &:focus-visible {
+    outline: 2px solid $gradient-blue-start;
+    outline-offset: 2px;
+  }
+
+  &--locked {
+    cursor: default;
+  }
+
+  &--highlighted {
+    animation: tileHighlight 0.95s ease-in-out infinite;
+    box-shadow: 0 0 0 3px var(--tutorial-highlight-color, #38a3ff);
+  }
+
+  &--selected {
+    box-shadow: 0 0 0 3px $gradient-blue-start;
+  }
+
+  &--disabled {
+    cursor: not-allowed;
+  }
+}
+
+@keyframes tileHighlight {
+  0%, 100% {
+    box-shadow: 0 0 0 3px var(--tutorial-highlight-color, #38a3ff);
+  }
+  50% {
+    box-shadow: 0 0 0 5px var(--tutorial-highlight-color, #38a3ff);
+  }
+}
+
+// ===========================================
+// ANIMATED HAND
+// ===========================================
+
+.animated-hand {
+  position: absolute;
+  color: #f2c582;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+  z-index: 100;
+  transition: left 160ms ease-out, top 160ms ease-out;
+
+  .animated-hand__emoji {
+    display: block;
+    line-height: 1;
+  }
+
+  &--tapping {
+    animation: tapHand 180ms ease-out;
+  }
+}
+
+@keyframes tapHand {
+  0% {
+    transform: translate(-50%, -50%) scale(1) translateY(0);
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(0.92) translateY(4px);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) translateY(0);
+  }
+}
+
+// ===========================================
+// TUTORIAL BUTTONS
+// ===========================================
+
+.tutorial-button {
+  @include button-base;
+  border-radius: 10px;
+  padding: 11px 26px;
+  font-size: $font-size-base;
+  min-width: 140px;
+  transition: all $transition-normal $ease-default;
+
+  &--primary {
+    background: #7f8288;
+    color: $color-light-taupe;
+    border: none;
+
+    &:hover {
+      background: #767980;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  &--secondary {
+    background-color: transparent;
+    color: $color-primary-gray;
+    border: 2px solid $color-primary-gray;
+
+    &:hover {
+      background-color: rgba($color-primary-gray, 0.1);
+    }
+
+    @include dark-mode {
+      color: $color-light-taupe;
+      border-color: $color-light-taupe;
+
+      &:hover {
+        background-color: rgba($color-light-taupe, 0.1);
+      }
+    }
+  }
+
+  &--danger {
+    background: linear-gradient(to right, $gradient-pink-start, $gradient-pink-end);
+    color: $color-light-taupe;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+}
+
+.tutorial-phase-actions {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-md;
+  margin-top: 30px;
+
+  &--stacked {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+// ===========================================
+// MOVE COUNTER
+// ===========================================
+
+.tutorial-move-counter {
+  text-align: center;
+  font-size: $font-size-large;
+  color: $color-description-text;
+  margin-top: 4px;
+  font-weight: 500;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
+}
+
+.tutorial-move-label {
+  margin-right: $spacing-xxs;
+}
+
+.tutorial-move-value {
+  font-weight: $font-weight-bolder;
+  color: $color-text-primary;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
+}
+
+.tutorial-move-optimal {
+  margin-left: $spacing-xxs;
+  font-size: $font-size-smaller;
+}
+
+// ===========================================
+// TARGET INDICATOR
+// ===========================================
+
+.tutorial-target-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tutorial-target-label {
+  font-size: $font-size-base;
+  color: $color-description-text;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
+}
+
+.tutorial-target-color {
+  width: 20px;
+  height: 20px;
+  border-radius: $border-radius-circle;
+  box-shadow: none;
+}
+
+.tutorial-target-value {
+  font-size: $font-size-base;
+  color: $color-description-text;
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.82);
+  }
+}
+
+.tutorial-target-indicator--watch {
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+.tutorial-target-color--dot {
+  width: 18px;
+  height: 18px;
+}
+
+.tutorial-try-phase {
+  display: flex;
+  flex-direction: column;
+  min-height: 590px;
+  position: relative;
+}
+
+.tutorial-phase-header--try {
+  margin-bottom: 6px;
+}
+
+.tutorial-try-goal-copy {
+  margin-top: 6px;
+  font-size: $font-size-large;
+  color: rgba($color-primary-gray, 0.62);
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.72);
+  }
+}
+
+.tutorial-try-goal-color {
+  text-transform: lowercase;
+}
+
+.tutorial-try-metadata {
+  width: fit-content;
+  margin: 0 auto 16px;
+}
+
+.tutorial-try-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.tutorial-try-meta-label {
+  color: rgba($color-primary-gray, 0.78);
+  font-size: $font-size-larger;
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.84);
+  }
+}
+
+.tutorial-try-goal-value {
+  font-weight: 700;
+  font-size: $font-size-larger;
+  color: $color-light-taupe;
+}
+
+.tutorial-try-goal-unit {
+  font-size: $font-size-larger;
+  color: $color-light-taupe;
+}
+
+.tutorial-try-status {
+  width: min(100%, 310px);
+  margin: 0 auto 12px;
+  border-radius: 11px;
+  padding: 8px 11px;
+  text-align: center;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  &--warning {
+    background: linear-gradient(180deg, rgba(#f9ebb2, 0.88), rgba(#f3dd8a, 0.72));
+    border-color: rgba(#c9a845, 0.48);
+    color: rgba($color-primary-gray, 0.9);
+  }
+
+  &--solved {
+    background: linear-gradient(180deg, rgba(#d9f3d1, 0.85), rgba(#b9e8b0, 0.75));
+    border-color: rgba(#6cae60, 0.5);
+    color: rgba(#2f7f26, 0.96);
+  }
+
+  @include dark-mode {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+
+    &--warning {
+      background: linear-gradient(180deg, rgba(#69561f, 0.7), rgba(#53421a, 0.74));
+      border-color: rgba(#f1cc58, 0.38);
+      color: #f2e1ae;
+    }
+
+    &--solved {
+      background: linear-gradient(180deg, rgba(#1f5f32, 0.78), rgba(#1b4f2a, 0.76));
+      border-color: rgba(#84d37c, 0.42);
+      color: #d1f4cb;
+    }
+  }
+}
+
+.tutorial-try-status-title {
+  margin: 0 0 4px;
+  font-size: $font-size-small;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  svg {
+    color: #e6b413;
+    font-size: 12px;
+  }
+
+  @include dark-mode {
+    svg {
+      color: #f2cc51;
+    }
+  }
+}
+
+.tutorial-try-status-message {
+  margin: 0;
+  font-size: $font-size-small;
+  line-height: 1.25;
+  color: rgba($color-primary-gray, 0.86);
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.86);
+  }
+}
+
+.tutorial-try-status-solved {
+  margin: 0;
+  font-size: $font-size-large;
+  font-weight: 700;
+}
+
+.tutorial-try-puzzles-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tutorial-try-puzzles-label {
+  color: rgba($color-primary-gray, 0.58);
+  font-size: $font-size-small;
+  margin-bottom: 8px;
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.62);
+  }
+}
+
+.tutorial-try-puzzles-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutorial-try-puzzle-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: $border-radius-circle;
+  opacity: 0.35;
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+
+  &--active {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.tutorial-grid-container--try {
+  margin: 0 0 16px;
+}
+
+.tutorial-try-instruction {
+  margin: 0;
+  text-align: center;
+  color: rgba($color-primary-gray, 0.68);
+  font-size: $font-size-large;
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.72);
+  }
+}
+
+.tutorial-try-moves {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.tutorial-try-moves-value {
+  font-size: 44px;
+  line-height: 1;
+  font-weight: 700;
+  color: $color-light-taupe;
+}
+
+.tutorial-try-moves-label {
+  margin-top: 4px;
+  font-size: $font-size-base;
+  color: rgba($color-primary-gray, 0.5);
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.56);
+  }
+}
+
+.tutorial-try-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+}
+
+.tutorial-try-footer-button {
+  border: none;
+  background: transparent;
+  color: rgba($color-primary-gray, 0.66);
+  font-size: $font-size-large;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px;
+
+  &:hover {
+    color: rgba($color-primary-gray, 0.9);
+  }
+
+  svg {
+    font-size: 14px;
+  }
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.72);
+
+    &:hover {
+      color: rgba($color-light-taupe, 0.92);
+    }
+  }
+}
+
+.tutorial-try-footer-button--skip {
+  gap: 0;
+}
+
+.tutorial-try-loss-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  border-radius: 8px;
+  padding: 14px;
+  backdrop-filter: blur(2px);
+
+  @include dark-mode {
+    background: rgba(0, 0, 0, 0.64);
+  }
+}
+
+.tutorial-try-loss-modal {
+  width: min(92%, 360px);
+  background: linear-gradient(180deg, #ebe6cf, #dfd9bf);
+  border: 1px solid rgba($color-primary-gray, 0.26);
+  border-radius: 18px;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+  padding: 20px 16px 16px;
+  text-align: center;
+
+  @include dark-mode {
+    background: linear-gradient(180deg, #3f3b34, #36332e);
+    border-color: rgba($color-light-taupe, 0.22);
+    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.tutorial-try-loss-title {
+  margin: 0 auto;
+  max-width: 100%;
+  font-size: clamp(1.9rem, 6.9vw, 2.5rem);
+  line-height: 1.08;
+  letter-spacing: 0;
+  color: #ec8f78;
+  font-style: normal;
+  white-space: normal;
+  text-wrap: balance;
+
+  @include dark-mode {
+    color: #f4a792;
+  }
+}
+
+.tutorial-try-loss-message {
+  margin: 10px 0 12px;
+  font-size: $font-size-large;
+  color: rgba($color-primary-gray, 0.8);
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.84);
+  }
+}
+
+.tutorial-try-loss-target-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: $font-size-base;
+  color: rgba($color-primary-gray, 0.9);
+  margin-bottom: 14px;
+
+  @include dark-mode {
+    color: rgba($color-light-taupe, 0.88);
+  }
+}
+
+.tutorial-try-loss-button {
+  width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.tutorial-watch-grid-shell {
+  background: rgba($color-white, 0.22);
+  border-radius: 16px;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  position: relative;
+  overflow: visible;
+}
+
+.tutorial-watch-progress {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tutorial-watch-progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: $border-radius-circle;
+  background: rgba($color-primary-gray, 0.35);
+
+  &--active {
+    background: #4ca9ef;
+  }
+}
+
+.tutorial-watch-copy {
+  min-height: 88px;
+  margin-top: 16px;
+}
+
+.tutorial-watch-copy-line {
+  margin: 0 0 8px;
+  color: rgba($color-primary-gray, 0.72);
+  text-align: center;
+  font-size: $font-size-large;
+  line-height: 1.35;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &--win {
+    margin-top: 14px;
+  }
+}
+
+.tutorial-watch-primary-button {
+  min-width: 96px;
+  padding: 9px 28px;
+  font-size: $font-size-base;
+  font-weight: 600;
+}
+
+.tutorial-phase-actions--watch {
+  margin-top: 22px;
+}
+
+.tutorial-skip-link {
+  margin: 14px auto 2px;
+  display: block;
+  border: none;
+  background: transparent;
+  color: rgba($color-primary-gray, 0.45);
+  font-size: $font-size-small;
+  cursor: pointer;
+  padding: 4px 8px;
+
+  &:hover {
+    color: rgba($color-primary-gray, 0.7);
+  }
+}
+
+// ===========================================
+// SOFT FAIL WARNING
+// ===========================================
+
+.tutorial-soft-fail-warning {
+  background-color: rgba($gradient-gold-start, 0.1);
+  border: 1px solid $gradient-gold-start;
+  border-radius: $border-radius-medium;
+  padding: $spacing-md;
+  margin-top: $spacing-md;
+  text-align: center;
+
+  p {
+    margin: 0 0 $spacing-sm 0;
+    font-size: $font-size-small;
+    color: color.adjust($gradient-gold-start, $lightness: -20%);
+  }
+
+  @include dark-mode {
+    background-color: rgba($gradient-gold-start, 0.15);
+
+    p {
+      color: $gradient-gold-start;
+    }
+  }
+}
+
+// ===========================================
+// SOLVED MESSAGE
+// ===========================================
+
+.tutorial-solved-message {
+  text-align: center;
+  margin-top: $spacing-md;
+
+  p {
+    font-family: $font-family-display;
+    font-size: $font-size-large;
+    font-weight: $font-weight-bolder;
+    color: $gradient-green-start;
+    margin: 0;
+  }
+}
+
+// ===========================================
+// COLOR PICKER
+// ===========================================
+
+.tutorial-color-picker-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: $z-index-modal + 10;
+}
+
+.tutorial-color-picker {
+  background-color: $bg-warm-taupe;
+  border-radius: $border-radius-large $border-radius-large 0 0;
+  padding: clamp(14px, 4vw, 22px);
+  width: min(98vw, 430px);
+  max-width: none;
+  --tutorial-picker-bubble-size: clamp(34px, 8.8vw, 44px);
+  --tutorial-picker-gap: clamp(8px, 2.4vw, 12px);
+  animation: slideUp $transition-slow $ease-out;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.tutorial-color-picker__bubbles {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--tutorial-picker-gap);
+}
+
+.tutorial-color-picker__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: var(--tutorial-picker-bubble-size);
+}
+
+.tutorial-color-picker__bubble {
+  width: var(--tutorial-picker-bubble-size);
+  height: var(--tutorial-picker-bubble-size);
+  border-radius: $border-radius-circle;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-normal $ease-default;
+  box-shadow: $shadow-small;
+
+  &:hover:not(:disabled) {
+    transform: scale(1.1);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &--current {
+    box-shadow: 0 0 0 3px $color-white, 0 0 0 5px $color-primary-gray;
+  }
+}
+
+.tutorial-color-picker__check {
+  color: $color-white;
+  font-size: clamp(13px, 3.8vw, 19px);
+}
+
+.tutorial-color-picker__label {
+  font-size: clamp(10px, 2.4vw, 13px);
+  color: $color-description-text;
+  text-transform: capitalize;
+  text-align: center;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
+}
+
+// ===========================================
+// COMPARE PHASE
+// ===========================================
+
+.tutorial-compare-phase {
+  text-align: center;
+}
+
+.tutorial-score-comparison {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-lg;
+  margin: $spacing-xl 0;
+}
+
+.tutorial-score-card {
+  background-color: rgba($color-primary-gray, 0.05);
+  border-radius: $border-radius-medium;
+  padding: $spacing-md $spacing-lg;
+  min-width: 100px;
+
+  @include dark-mode {
+    background-color: rgba($color-light-taupe, 0.05);
+  }
+}
+
+.tutorial-score-value {
+  font-family: $font-family-display;
+  font-size: $font-size-hero;
+  font-weight: $font-weight-bolder;
+  line-height: 1;
+}
+
+.tutorial-score-card--user .tutorial-score-value {
+  background: linear-gradient(to right, $gradient-coral-start, $gradient-coral-end);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tutorial-score-card--optimal .tutorial-score-value {
+  background: linear-gradient(to right, $gradient-blue-start, $gradient-blue-end);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tutorial-score-label {
+  font-size: $font-size-small;
+  color: $color-description-text;
+  margin-top: $spacing-xxs;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
+}
+
+.tutorial-score-divider {
+  font-size: $font-size-large;
+  color: $color-description-text;
+  font-weight: $font-weight-bold;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
+}
+
+.tutorial-badge {
+  display: inline-block;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius-medium;
+  font-family: $font-family-display;
+  font-weight: $font-weight-bolder;
+  font-size: $font-size-small;
+
+  &--perfect {
+    background: linear-gradient(to right, $gradient-green-start, $gradient-green-end);
+    color: $color-light-taupe;
+  }
+}
+
+// ===========================================
+// READY PHASE
+// ===========================================
+
+.tutorial-ready-phase {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 590px;
+}
+
+.tutorial-ready-content {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.tutorial-ready-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.tutorial-ready-badge {
+  width: 84px;
+  height: 84px;
+  border-radius: $border-radius-circle;
+  margin: 28px auto 22px;
+  background: #52b0ee;
+  color: #d8d3bb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+
+.tutorial-phase-header--ready {
+  margin-bottom: 0;
+}
+
+.tutorial-phase-header--ready .tutorial-phase-message {
+  margin-top: 8px;
+}
+
+.tutorial-phase-actions--ready {
+  margin-top: auto;
+  width: 100%;
+  gap: 10px;
+}
+
+.tutorial-phase-actions--ready .tutorial-button--primary {
+  width: 100%;
+}
+
+.tutorial-ready-secondary-link {
+  border: none;
+  background: transparent;
+  color: rgba($color-primary-gray, 0.62);
+  font-size: $font-size-large;
+  padding: 4px;
+  cursor: pointer;
+
+  &:hover {
+    color: rgba($color-primary-gray, 0.86);
+  }
+}
+
+// ===========================================
+// SKIP CONFIRMATION MODAL
+// ===========================================
+
+.skip-confirmation-backdrop {
+  @include modal-backdrop;
+  z-index: $z-index-modal + 20;
+}
+
+.skip-confirmation-modal {
+  background-color: $bg-warm-taupe;
+  border-radius: $border-radius-large;
+  box-shadow: $shadow-modal;
+  padding: $spacing-lg;
+  width: 90%;
+  max-width: 350px;
+  position: relative;
+  text-align: center;
+
+  @include dark-mode {
+    background-color: $bg-dark-elevated;
+    box-shadow: $shadow-dark-large;
+  }
+}
+
+.skip-confirmation-close {
+  position: absolute;
+  top: $spacing-sm;
+  right: $spacing-sm;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background-color: rgba($color-primary-gray, 0.1);
+  color: $color-primary-gray;
+  border-radius: $border-radius-circle;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: rgba($gradient-pink-start, 0.2);
+    color: $gradient-pink-start;
+  }
+
+  @include dark-mode {
+    background-color: rgba($color-light-taupe, 0.1);
+    color: $color-light-taupe;
+
+    &:hover {
+      background-color: rgba($gradient-pink-start, 0.3);
+      color: $gradient-pink-start;
+    }
+  }
+}
+
+.skip-confirmation-title {
+  font-family: $font-family-display;
+  font-size: $font-size-larger;
+  font-weight: $font-weight-bolder;
+  color: $color-text-primary;
+  margin: 0 0 $spacing-sm 0;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
+}
+
+.skip-confirmation-message {
+  font-size: $font-size-base;
+  color: $color-description-text;
+  margin: 0 0 $spacing-lg 0;
+  line-height: 1.5;
+
+  @include dark-mode {
+    color: color.adjust($color-light-taupe, $lightness: -15%);
+  }
+}
+
+.skip-confirmation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+// ===========================================
+// REDUCED MOTION
+// ===========================================
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-modal,
+  .tutorial-color-picker,
+  .animated-hand,
+  .tutorial-tile--highlighted {
+    animation: none;
+    transition: none;
+  }
+
+  .animated-hand--tapping {
+    animation: none;
+  }
+
+  @keyframes tileHighlight {
+    0%, 100% {
+      box-shadow: 0 0 0 3px $gradient-blue-start;
+    }
+  }
+}

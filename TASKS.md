@@ -11,41 +11,7 @@
 
 ## Active Tasks
 
-### type-safety-improvements
-**Task**: Type safety improvements (replace `any` types)
-**Priority**: 9 of 15
-**Stage**: RESEARCH
-**Pipeline**: code-workflow
-**Started**: 2026-02-05
-**Issue**: Medium: 56 `any` usages weaken type checking
-**Attempts**: 0
-**Files**: TBD
-**Quality Scores**:
-| Stage | Score | Attempts | Status |
-|-------|-------|----------|--------|
-| RESEARCH | - | 0 | CURRENT |
-
-### parallelize-datacache-fetches
-**Task**: Parallelize DataCacheContext fetches
-**Priority**: 4 of 15
-**Stage**: REVIEW
-**Pipeline**: code-workflow
-**Started**: 2026-02-05
-**Issue**: High: 6 sequential API calls on load
-**Attempts**: 0
-**Files**:
-- MOD: src/contexts/DataCacheContext.tsx
-- NEW: src/contexts/__tests__/DataCacheContext.test.tsx
-**Quality Scores**:
-| Stage | Score | Attempts | Status |
-|-------|-------|----------|--------|
-| RESEARCH | 9.8 | 1 | PASS |
-| PLAN | 9.1 | 1 | PASS |
-| IMPLEMENT | 9.8 | 1 | PASS |
-| WRITE-TESTS | 9.3 | 1 | PASS |
-| SIMPLIFY | 9.0 | 1 | PASS |
-| VERIFY | 9.0 | 1 | PASS |
-| REVIEW | - | 0 | CURRENT |
+*No active tasks*
 
 ---
 
@@ -54,7 +20,7 @@
 | # | Task | Impact | Effort | Priority | Source |
 |---|------|--------|--------|----------|--------|
 | ~~9~~ | ~~Type safety improvements (replace `any` types)~~ | - | - | - | Completed: 0 `any` in non-test src |
-| 11 | Pre-compute leaderboard snapshots | 8 | M | 2.7 | High: full collection group scan per request |
+| ~~11~~ | ~~Pre-compute leaderboard snapshots~~ | - | - | - | Completed |
 | ~~12~~ | ~~Extract shared types between frontend/functions~~ | - | - | - | Completed |
 | ~~13~~ | ~~Complete CRA-to-Vite migration cleanup~~ | - | - | - | Completed |
 | ~~14~~ | ~~Remove console.logs / add production log stripping~~ | - | - | - | Completed: esbuild pure drops console.log/debug/info |
@@ -62,12 +28,15 @@
 
 ## Non-Audit Backlog (pre-existing)
 
-- [ ] Tutorial overhaul — redesign to better teach the game
-- [ ] Split monolithic functions/src/index.ts (3,399 lines) — Large effort
-- [ ] Increase frontend test coverage (1 test file for 10,600 LOC) — Large effort
-- [ ] Update TypeScript to 5.x — Low priority
+- [ ] Tutorial overhaul — redesign to better teach the game (discarded 2026-02-05, needs better task definition)
+- [ ] Dead code cleanup: TutorialContext.tsx:29-32 getMoveIndexForStep (discovered during tutorial-overhaul RESEARCH)
+- [ ] Extract magic numbers in TutorialContext.tsx to constants (discovered during tutorial-overhaul RESEARCH)
+- [ ] Add tutorial analytics tracking (discovered during tutorial-overhaul RESEARCH)
+- [x] Split monolithic functions/src/index.ts — Completed (3,753→39 lines)
+- [x] Increase frontend test coverage — Completed (28→253 tests)
+- [x] Update TypeScript to 5.x — Completed
 - [ ] Add PWA/Service Worker support — Low priority
-- [ ] Add .env.example — Low priority
+- [x] Add .env.example — Completed
 
 ## Completed
 
@@ -93,6 +62,11 @@
 - [x] Strip userIds from getUsageStats response — defense-in-depth, remove UIDs from API response (2026-02-05, audit)
 - [x] Type safety improvements — eliminated all `any` types from non-test source (0 remaining) (2026-02-05, audit)
 - [x] Production log stripping — esbuild drops console.log/debug/info in builds (2026-02-05, audit)
+- [x] Parallelize DataCacheContext fetches — 6 sequential API calls → Promise.all parallel execution (2026-02-05, audit)
+- [x] Pre-compute leaderboard snapshots — fix 4 bugs: collection name, userRanks map, totalEntries, ELO recomputation (2026-02-05, audit)
+- [x] Quick wins: TypeScript 4.9.5 → 5.9.3, tsconfig improvements, .env.example updates (2026-02-05)
+- [x] Split monolithic functions/src/index.ts — 3,753→39 lines, 17 functions into domain-based modules (2026-02-05)
+- [x] Increase frontend test coverage — 28→253 tests, 8 new test files for utils + components (2026-02-05)
 
 ## Deferred
 

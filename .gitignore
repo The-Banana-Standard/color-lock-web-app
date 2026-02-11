@@ -91,3 +91,4 @@ cursor_notes/
 
 # Pipeline working directory
 .pipeline/
+.worktree/

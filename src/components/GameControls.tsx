@@ -46,8 +46,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   // Destructure difficulty change callback
   onDifficultyChange = () => {}
 }) => {
-  const { isTutorialMode } = useTutorialContext();
-  
+  // Tutorial context - check if tutorial is open (don't show difficulty selector during tutorial)
+  const { state: tutorialState } = useTutorialContext();
+  const isTutorialOpen = tutorialState.isOpen;
+
   // Use the difficulty level from settings with a fallback to prevent errors
   const currentDifficulty = settings?.difficultyLevel || DifficultyLevel.Medium;
   
@@ -85,7 +87,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       {/* Difficulty Indicator (Desktop/Tablet) */}
       {/* Only show outside tutorial mode */}
-      {!isTutorialMode && (
+      {!isTutorialOpen && (
         <div className={`difficulty-indicator-container difficulty-${currentDifficulty}`}>
           <span className="difficulty-text">difficulty</span>
           <div className="difficulty-columns">
@@ -114,11 +116,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
       {/* Top Card Content */}
       <div className="top-card-content">
         <h1>
-          {isTutorialMode ? (
-            <span style={{ color: 'red' }}>Tutorial</span>
-          ) : (
-            <GradientTitle fontSize="3.5rem" />
-          )}
+          <GradientTitle fontSize="3.5rem" />
         </h1>
         <div className="target-row">
           <span>Target:</span>
@@ -160,8 +158,6 @@ export const GameFooter: React.FC<GameFooterProps> = ({
   getLockedRegionSize,
   onTryAgain
 }) => {
-  const { isTutorialMode, showTryAgainButton } = useTutorialContext();
-  
   return (
     <div className="controls-container">
       <div className="controls-inner">
@@ -182,15 +178,13 @@ export const GameFooter: React.FC<GameFooterProps> = ({
           </div>
         )}
         
-        {/* Try Again button - only show if not in tutorial mode or if showTryAgainButton is true */}
-        {(!isTutorialMode || showTryAgainButton) && (
-          <button 
-            className="try-again-button" 
-            onClick={onTryAgain}
-          >
-            Try Again
-          </button>
-        )}
+        {/* Try Again button */}
+        <button
+          className="try-again-button"
+          onClick={onTryAgain}
+        >
+          Try Again
+        </button>
       </div>
     </div>
   );
@@ -218,8 +212,6 @@ interface GameControlsProps {
 }
 
 const GameControls: React.FC<GameControlsProps> = (props) => {
-  const { isTutorialMode, showHintButton } = useTutorialContext();
-
   return (
     <>
       <GameHeader 
@@ -227,7 +219,7 @@ const GameControls: React.FC<GameControlsProps> = (props) => {
         settings={props.settings}
         getColorCSS={props.getColorCSS}
         onBotSolutionClick={props.onHintClick}
-        showHintButton={!isTutorialMode || showHintButton}
+        showHintButton={true}
         isMenuOpen={props.isMenuOpen}
         toggleMenu={props.toggleMenu}
         isGuest={props.isGuest}

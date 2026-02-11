@@ -11,8 +11,6 @@ import { TileColor } from './types';
 // Core components (loaded immediately)
 import GameGrid from './components/GameGrid';
 import { GameHeader, GameFooter } from './components/GameControls';
-import TutorialOverlay from './components/TutorialOverlay';
-import TutorialHighlight from './components/TutorialHighlight';
 import SignUpButton from './components/SignUpButton';
 import HamburgerMenu from './components/HamburgerMenu';
 
@@ -24,11 +22,12 @@ const StatsModal = React.lazy(() => import('./components/StatsModal'));
 const AutocompleteModal = React.lazy(() => import('./components/AutocompleteModal'));
 const BotSolutionModal = React.lazy(() => import('./components/BotSolutionModal'));
 const LostGameModal = React.lazy(() => import('./components/LostGameModal'));
-const TutorialModal = React.lazy(() => import('./components/TutorialModal'));
-const TutorialWarningModal = React.lazy(() => import('./components/TutorialWarningModal'));
 const LandingScreen = React.lazy(() => import('./components/LandingScreen'));
 const UsageStatsScreen = React.lazy(() => import('./components/UsageStatsScreen'));
 const DeleteAccountPage = React.lazy(() => import('./components/DeleteAccountPage'));
+
+// New Tutorial Modal
+const TutorialModal = React.lazy(() => import('./components/tutorial/TutorialModal'));
 
 // Utils
 import { generateShareText } from './utils/shareUtils';
@@ -36,7 +35,7 @@ import { getLockedColorCSS } from './utils/colorUtils';
 
 // Context
 import { GameProvider, useGameContext } from './contexts/GameContext';
-import { TutorialProvider, useTutorialContext, TutorialStep } from './contexts/TutorialContext';
+import { TutorialProvider, useTutorialContext } from './contexts/TutorialContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataCacheProvider, useDataCache } from './contexts/DataCacheContext';
 
@@ -112,26 +111,8 @@ const GameContainer = () => {
     isLoadingStats
   } = useGameContext();
 
-  // Tutorial context
-  const {
-    isTutorialMode,
-    currentStep,
-    tutorialBoard,
-    isBoardFading,
-    showTutorialModal,
-    setShowTutorialModal,
-    handleTileClick: handleTutorialTileClick,
-    handleColorSelect: handleTutorialColorSelect,
-    closeColorPicker: closeTutorialColorPicker,
-    showColorPicker: showTutorialColorPicker,
-    suggestedTile,
-    lockedCells: tutorialLockedCells,
-    getCurrentStepConfig,
-    showWarningModal,
-    closeWarningModal,
-    currentMoveIndex,
-    showHintButton
-  } = useTutorialContext();
+  // Tutorial context - new API
+  const { state: tutorialState, openTutorial } = useTutorialContext();
 
   // Auth context
   const { isGuest } = useAuth();
@@ -148,7 +129,7 @@ const GameContainer = () => {
     width: window.innerWidth,
     height: window.innerHeight,
   });
-  
+
   const [confettiActive, setConfettiActive] = useState<boolean>(false);
 
   // Update window dimensions for confetti
@@ -159,7 +140,7 @@ const GameContainer = () => {
         height: window.innerHeight,
       });
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -180,7 +161,7 @@ const GameContainer = () => {
   // Define button action handlers
   const handleSettingsClickAction = () => setShowSettings(true);
   const handleStatsClickAction = () => setShowStats(true);
-  const handleInfoClickAction = () => setShowTutorialModal(true);
+  const handleInfoClickAction = () => openTutorial();
 
   // Define the handler function for difficulty changes from GameHeader
   const handleDifficultyChangeFromHeader = (newDifficulty: DifficultyLevel) => {
@@ -212,36 +193,6 @@ const GameContainer = () => {
   if (!settings.enableAnimations) {
     containerClasses.push('no-animations');
   }
-  if (isBoardFading) {
-    containerClasses.push('board-fading');
-  }
-  if (isTutorialMode) {
-    containerClasses.push('tutorial-mode');
-  }
-
-  // Get tutorial step configuration
-  const tutorialConfig = isTutorialMode ? getCurrentStepConfig() : { overlayElements: [] };
-
-  // Determine which board to display (tutorial board or regular board)
-  const currentBoard = isTutorialMode && tutorialBoard ? tutorialBoard : puzzle.grid;
-
-  // Handle tile click based on mode
-  const onTileClick = (row: number, col: number) => {
-    if (isTutorialMode) {
-      handleTutorialTileClick(row, col);
-    } else {
-      handleTileClick(row, col);
-    }
-  };
-
-  // Handle color selection based on mode
-  const onColorSelect = (color: TileColor) => {
-    if (isTutorialMode) {
-      handleTutorialColorSelect(color);
-    } else {
-      handleColorSelect(color);
-    }
-  };
 
   return (
     <div className={containerClasses.join(' ')}>
@@ -283,16 +234,11 @@ const GameContainer = () => {
 
         {/* Game Header - updated with hamburger menu props */}
         <GameHeader
-          puzzle={isTutorialMode ? {
-            ...puzzle,
-            targetColor: 'red' as TileColor,
-            algoScore: 7,
-            userMovesUsed: currentMoveIndex
-          } : puzzle}
+          puzzle={puzzle}
           settings={settings}
           getColorCSS={getColorCSSWithSettings}
           onBotSolutionClick={handleBotSolutionClick}
-          showHintButton={!isTutorialMode || useTutorialContext().showHintButton}
+          showHintButton={true}
           isAutoSolving={isAutoSolving}
           // Add hamburger menu props
           isMenuOpen={isMenuOpen}
@@ -309,19 +255,14 @@ const GameContainer = () => {
         {/* Game Grid */}
         <div className="grid-container" style={{ position: 'relative' }}>
           <GameGrid
-            grid={currentBoard}
-            lockedCells={isTutorialMode ? tutorialLockedCells : puzzle.lockedCells}
+            grid={puzzle.grid}
+            lockedCells={puzzle.lockedCells}
             hintCell={hintCell}
             settings={settings}
-            onTileClick={onTileClick}
+            onTileClick={handleTileClick}
             getColorCSS={getColorCSSWithSettings}
             puzzleTargetColor={puzzle.targetColor}
           />
-          
-          {/* Tutorial Highlight for connected tiles */}
-          {isTutorialMode && (
-            <TutorialHighlight />
-          )}
 
           {/* Guest auth loading overlay */}
           {isCreatingGuestAccount && (
@@ -336,164 +277,101 @@ const GameContainer = () => {
         <GameFooter
           puzzle={puzzle}
           settings={settings}
-          getLockedColorCSS={() => {
-            if (isTutorialMode && tutorialBoard) {
-              return getLockedColorCSS(tutorialBoard, tutorialLockedCells, settings);
-            }
-            return getLockedColorCSSWithSettings();
-          }}
-          getLockedRegionSize={() => isTutorialMode ? tutorialLockedCells.size : getLockedRegionSize()}
+          getLockedColorCSS={getLockedColorCSSWithSettings}
+          getLockedRegionSize={getLockedRegionSize}
           onTryAgain={handleTryAgain}
         />
       </div>
 
       {/* Modals - keep these at the bottom of the container */}
       <Suspense fallback={null}>
-      {/* Tutorial Modal - For intro */}
-      <TutorialModal
-        isOpen={showTutorialModal}
-        onClose={() => setShowTutorialModal(false)}
-        type="intro"
-      />
+        {/* New Tutorial Modal */}
+        {tutorialState.isOpen && (
+          <TutorialModal getColorCSS={getColorCSSWithSettings} />
+        )}
 
-      {/* Tutorial Step Modal - For regular tutorial steps */}
-      {isTutorialMode && (
-        <TutorialModal
-          isOpen={true}
-          onClose={() => {}} // No close option for tutorial steps
-          type="step"
-        />
-      )}
-
-      {/* Tutorial Overlay */}
-      {isTutorialMode && tutorialConfig.overlayElements.length > 0 && (
-        <TutorialOverlay overlayElements={tutorialConfig.overlayElements} />
-      )}
-
-      {/* Tutorial Warning Modal */}
-      {isTutorialMode && (
-        <TutorialWarningModal 
-          isOpen={showWarningModal} 
-          onClose={closeWarningModal} 
-        />
-      )}
-
-      {/* Color Picker Modal */}
-      {(() => {
-        const showTutorialPicker = isTutorialMode && (
-          (showTutorialColorPicker && (suggestedTile || selectedTile))
-          || currentStep === TutorialStep.COLOR_SELECTION
-        );
-        const showGamePicker = showColorPicker && selectedTile && !isTutorialMode;
-        
-        // Determine the current color to mark in the picker
-        let currentPickerColor: TileColor | undefined = undefined;
-        if (isTutorialMode && tutorialBoard) {
-          if (currentStep === TutorialStep.COLOR_SELECTION) {
-            // For COLOR_SELECTION step, explicitly use green as the current color
-            // Note: we don't check for selectedTile here as we want to show green regardless
-            currentPickerColor = TileColor.Green;
-          } else if (suggestedTile) {
-            currentPickerColor = tutorialBoard[suggestedTile.row][suggestedTile.col];
-          }
-        } else if (selectedTile && puzzle?.grid) {
-          currentPickerColor = puzzle.grid[selectedTile.row][selectedTile.col];
-        }
-        
-        return (showGamePicker || showTutorialPicker) && (
+        {/* Color Picker Modal */}
+        {showColorPicker && selectedTile && (
           <ColorPickerModal
-            onSelect={(color) => {
-              if (isTutorialMode) {
-                handleTutorialColorSelect(color);
-              } else {
-                handleColorSelect(color);
-              }
-            }}
-            onCancel={() => {
-              if (isTutorialMode) {
-                closeTutorialColorPicker();
-              } else {
-                closeColorPicker();
-              }
-            }}
+            onSelect={handleColorSelect}
+            onCancel={closeColorPicker}
             getColorCSS={getColorCSSWithSettings}
-            currentColor={currentPickerColor}
+            currentColor={puzzle.grid[selectedTile.row][selectedTile.col]}
           />
-        );
-      })()}
+        )}
 
-      {/* Autocomplete Modal */}
-      {showAutocompleteModal && puzzle && (
-        <AutocompleteModal
-          isOpen={showAutocompleteModal}
-          onClose={() => setShowAutocompleteModal(false)}
-          onAutoComplete={handleAutoComplete}
-          targetColor={puzzle.targetColor}
-          getColorCSS={getColorCSSWithSettings}
+        {/* Autocomplete Modal */}
+        {showAutocompleteModal && puzzle && (
+          <AutocompleteModal
+            isOpen={showAutocompleteModal}
+            onClose={() => setShowAutocompleteModal(false)}
+            onAutoComplete={handleAutoComplete}
+            targetColor={puzzle.targetColor}
+            getColorCSS={getColorCSSWithSettings}
+          />
+        )}
+
+        {/* Bot Solution Modal */}
+        {showBotSolutionModal && puzzle && (
+          <BotSolutionModal
+            isOpen={showBotSolutionModal}
+            onClose={() => setShowBotSolutionModal(false)}
+            onConfirm={handleBotSolutionConfirm}
+            targetColor={puzzle.targetColor}
+            getColorCSS={getColorCSSWithSettings}
+          />
+        )}
+
+        {/* Lost Game Modal */}
+        {puzzle.isLost && (
+          <LostGameModal
+            isOpen={puzzle.isLost}
+            targetColor={puzzle.targetColor}
+            lockedColor={(() => {
+              if (puzzle.lockedCells.size === 0) return null;
+              const cellKey = puzzle.lockedCells.values().next().value;
+              if (typeof cellKey !== 'string') return null;
+              const [rowStr, colStr] = cellKey.split(',');
+              const row = parseInt(rowStr, 10);
+              const col = parseInt(colStr, 10);
+              if (isNaN(row) || isNaN(col)) return null;
+              return puzzle.grid[row]?.[col] ?? null;
+            })()}
+            getColorCSS={getColorCSSWithSettings}
+            onClose={resetLostState}
+            onTryAgain={handleTryAgain}
+          />
+        )}
+
+        {/* Win Modal */}
+        {showWinModal && (
+          <WinModal
+            puzzle={puzzle}
+            onTryAgain={handleTryAgain}
+            onClose={() => setShowWinModal(false)}
+            getColorCSS={getColorCSSWithSettings}
+            generateShareText={() => generateShareText(puzzle)}
+            setShowWinModal={setShowWinModal}
+            onChangeDifficulty={handleDifficultyChangeFromHeader}
+          />
+        )}
+
+        {/* Settings Modal */}
+        <SettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
         />
-      )}
 
-      {/* Bot Solution Modal */}
-      {showBotSolutionModal && puzzle && (
-        <BotSolutionModal
-          isOpen={showBotSolutionModal}
-          onClose={() => setShowBotSolutionModal(false)}
-          onConfirm={handleBotSolutionConfirm}
-          targetColor={puzzle.targetColor}
-          getColorCSS={getColorCSSWithSettings}
+        {/* Stats Modal */}
+        <StatsModal
+          isOpen={showStats}
+          onClose={() => setShowStats(false)}
+          stats={gameStats}
+          onShareStats={shareGameStats}
+          isLoading={isLoadingStats}
         />
-      )}
-
-      {/* Lost Game Modal */}
-      {puzzle.isLost && (
-        <LostGameModal
-          isOpen={puzzle.isLost}
-          targetColor={puzzle.targetColor}
-          lockedColor={(() => {
-            if (puzzle.lockedCells.size === 0) return null;
-            const cellKey = puzzle.lockedCells.values().next().value;
-            if (typeof cellKey !== 'string') return null;
-            const [rowStr, colStr] = cellKey.split(',');
-            const row = parseInt(rowStr, 10);
-            const col = parseInt(colStr, 10);
-            if (isNaN(row) || isNaN(col)) return null;
-            return puzzle.grid[row]?.[col] ?? null;
-          })()}
-          getColorCSS={getColorCSSWithSettings}
-          onClose={resetLostState}
-          onTryAgain={handleTryAgain}
-        />
-      )}
-
-      {/* Win Modal */}
-      {showWinModal && (
-        <WinModal
-          puzzle={puzzle}
-          onTryAgain={handleTryAgain}
-          onClose={() => setShowWinModal(false)}
-          getColorCSS={getColorCSSWithSettings}
-          generateShareText={() => generateShareText(puzzle)}
-          setShowWinModal={setShowWinModal}
-          onChangeDifficulty={handleDifficultyChangeFromHeader}
-        />
-      )}
-
-      {/* Settings Modal */}
-      <SettingsModal 
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        settings={settings}
-        onSettingsChange={handleSettingsChange}
-      />
-
-      {/* Stats Modal */}
-      <StatsModal
-        isOpen={showStats}
-        onClose={() => setShowStats(false)}
-        stats={gameStats}
-        onShareStats={shareGameStats}
-        isLoading={isLoadingStats}
-      />
       </Suspense>
 
       {/* Error display */}

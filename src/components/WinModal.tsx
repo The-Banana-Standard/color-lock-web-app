@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
 import { DailyPuzzle, TileColor } from '../types';
 import { useGameContext } from '../contexts/GameContext';
-import { useTutorialContext } from '../contexts/TutorialContext';
 import { dateKeyForToday } from '../utils/dateUtils';
 import { defaultStats } from '../types/stats';
 
@@ -52,9 +51,6 @@ const WinModal: React.FC<WinModalProps> = ({
   const [confettiActive, setConfettiActive] = useState<boolean>(true);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
   const [displayedScore, setDisplayedScore] = useState<number>(0);
-
-  // Get tutorial context
-  const { isTutorialMode, endTutorial } = useTutorialContext();
 
   // Get game context to access stats and settings for win modal
   const { gameStats, winModalStats, settings, finalizeBestScore } = useGameContext();
@@ -317,14 +313,7 @@ ${boardRows}`;
 
   // Handle try again button
   const handleTryAgainOrContinue = () => {
-    if (isTutorialMode) {
-      // In tutorial mode, end the tutorial
-      endTutorial();
-      onClose();
-    } else {
-      // In regular mode, just try again
-      onTryAgain();
-    }
+    onTryAgain();
   };
 
   return (
@@ -385,7 +374,7 @@ ${boardRows}`;
             {/* Always show two buttons side by side when user beats bot */}
             <div className="dual-action-buttons">
               <button className="action-button-secondary" onClick={handleTryAgainOrContinue}>
-                {isTutorialMode ? "Play Today's Puzzle" : "Try Again"}
+                Try Again
               </button>
               {nextDifficulty && (
                 <button className="action-button-primary" onClick={handleTryNextDifficulty}>
@@ -403,7 +392,7 @@ ${boardRows}`;
           // User didn't beat bot - emphasize try again
           <div className="win-actions-primary">
             <button className="try-again-prominent" onClick={handleTryAgainOrContinue}>
-              {isTutorialMode ? "Play Today's Puzzle" : "Try Again"}
+              Try Again
             </button>
             <div className="secondary-links">
               <button className="close-link" onClick={onClose}>Close</button>
@@ -417,7 +406,7 @@ ${boardRows}`;
         )}
 
         {/* Conditional Footer - Timer only when beat bot */}
-        {beatBot && !isTutorialMode && (
+        {beatBot && (
           <div className="conditional-footer">
             <div className="next-puzzle-timer">
               <p>New puzzle in:</p>
