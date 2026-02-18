@@ -76,6 +76,14 @@
   min-height: 560px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  @media (max-height: 700px) {
+    min-height: auto;
+    padding-top: 44px;
+    padding-bottom: 16px;
+  }
 }
 
 // ===========================================
@@ -337,6 +345,10 @@
     flex-direction: column;
     align-items: center;
   }
+
+  @media (max-height: 700px) {
+    margin-top: 16px;
+  }
 }
 
 // ===========================================
@@ -383,6 +395,10 @@
   justify-content: center;
   gap: 8px;
   margin-bottom: 20px;
+
+  @media (max-height: 700px) {
+    margin-bottom: 12px;
+  }
 }
 
 .tutorial-target-label {
@@ -509,7 +525,11 @@
 .tutorial-try-goal-value {
   font-weight: 700;
   font-size: $font-size-larger;
-  color: $color-light-taupe;
+  color: $color-primary-gray;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 
   &--compact {
     font-size: $font-size-base;
@@ -518,7 +538,11 @@
 
 .tutorial-try-goal-unit {
   font-size: $font-size-larger;
-  color: $color-light-taupe;
+  color: $color-description-text;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
 
   &--compact {
     font-size: $font-size-base;
@@ -606,6 +630,10 @@
   flex-direction: column;
   align-items: center;
   margin-bottom: 16px;
+
+  @media (max-height: 700px) {
+    margin-bottom: 8px;
+  }
 }
 
 .tutorial-try-puzzles-label {
@@ -661,7 +689,15 @@
   font-size: 44px;
   line-height: 1;
   font-weight: 700;
-  color: $color-light-taupe;
+  color: $color-primary-gray;
+
+  @include dark-mode {
+    color: $color-light-taupe;
+  }
+
+  @media (max-height: 700px) {
+    font-size: 34px;
+  }
 }
 
 .tutorial-try-moves-label {
@@ -937,8 +973,8 @@
   padding: clamp(14px, 4vw, 22px);
   width: min(98vw, 430px);
   max-width: none;
-  --tutorial-picker-bubble-size: clamp(34px, 8.8vw, 44px);
-  --tutorial-picker-gap: clamp(8px, 2.4vw, 12px);
+  --tutorial-picker-bubble-size: clamp(38px, 10vw, 50px);
+  --tutorial-picker-gap: clamp(12px, 3.2vw, 18px);
   animation: slideUp $transition-slow $ease-out;
 
   @include dark-mode {
@@ -1301,6 +1337,12 @@
   margin-bottom: 30px;
   margin-top: 30px;
   width: 100%;
+
+  @media (max-height: 700px) {
+    min-height: 60px;
+    margin-bottom: 16px;
+    margin-top: 16px;
+  }
 }
 
 // ===========================================
@@ -1412,6 +1454,10 @@
   margin-top: 8px;
   height: 250px;
   overflow: visible;
+
+  @media (max-height: 700px) {
+    height: 220px;
+  }
 }
 
 .tutorial-watch-picker-container {
