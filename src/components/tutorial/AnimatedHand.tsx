@@ -1,7 +1,8 @@
 /**
  * AnimatedHand Component
  *
- * Displays an animated hand pointer that taps on target tiles during the watch phase.
+ * Displays an animated hand pointer that points at target tiles or picker bubbles.
+ * Always renders (opacity toggle) to allow smooth CSS transitions.
  */
 
 import React from 'react';
@@ -11,9 +12,9 @@ interface AnimatedHandProps {
   visible: boolean;
   /** Whether the hand should animate a tap */
   isTapping: boolean;
-  /** X position relative to the grid (percentage or px) */
+  /** X position relative to the parent container */
   x: number;
-  /** Y position relative to the grid (percentage or px) */
+  /** Y position relative to the parent container */
   y: number;
   /** Size of the hand icon */
   size?: number;
@@ -26,12 +27,9 @@ const AnimatedHand: React.FC<AnimatedHandProps> = ({
   y,
   size = 42
 }) => {
-  if (!visible) {
-    return null;
-  }
-
   const classes = ['animated-hand'];
   if (isTapping) classes.push('animated-hand--tapping');
+  if (!visible) classes.push('animated-hand--hidden');
 
   return (
     <div

@@ -9,6 +9,7 @@ import React from 'react';
 import { TileColor } from '../../types';
 import TutorialTile from './TutorialTile';
 import { TUTORIAL_GRID_SIZE } from '../../contexts/tutorialConfig';
+import { TILE_STAGGER_DELAY } from '../../utils/animationTimings';
 
 interface TutorialGridProps {
   /** The grid state to display */
@@ -31,6 +32,8 @@ interface TutorialGridProps {
   interactive?: boolean;
   /** Total grid size in pixels (default 220px) */
   gridSize?: number;
+  /** Whether the grid is playing the spin transition */
+  isTransitioning?: boolean;
 }
 
 const TutorialGrid: React.FC<TutorialGridProps> = ({
@@ -43,7 +46,8 @@ const TutorialGrid: React.FC<TutorialGridProps> = ({
   onTileClick,
   getColorCSS,
   interactive = true,
-  gridSize = 220
+  gridSize = 220,
+  isTransitioning = false
 }) => {
   // Calculate tile size based on grid size
   const gap = 8; // Gap between tiles
@@ -91,6 +95,8 @@ const TutorialGrid: React.FC<TutorialGridProps> = ({
                 interactive={interactive}
                 size={tileSize}
                 highlightColor={highlightColor}
+                isSpinning={isTransitioning}
+                spinDelay={(rowIndex + colIndex) * TILE_STAGGER_DELAY}
               />
             );
           })}

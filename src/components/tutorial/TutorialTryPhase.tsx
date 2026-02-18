@@ -15,7 +15,6 @@ import {
 } from '../../contexts/TutorialContext';
 import {
   TRY_PHASE_MESSAGES,
-  TUTORIAL_TRY_LOSS_LOCK_THRESHOLD,
   TUTORIAL_TRY_PUZZLES,
   TUTORIAL_TRY_PUZZLE_COUNT,
   getTryPuzzleConfig
@@ -57,25 +56,22 @@ const TutorialTryPhase: React.FC<TutorialTryPhaseProps> = ({ getColorCSS }) => {
   const targetColorNameTitle =
     currentPuzzle.targetColor.charAt(0).toUpperCase() + currentPuzzle.targetColor.slice(1);
   const showWarning = useMemo(() => {
-    if (isSolved || isTryLost || lockedCells.size !== TUTORIAL_TRY_LOSS_LOCK_THRESHOLD - 1) {
-      return false;
+    if (isSolved || isTryLost || userMoveCount === 0) return false;
+
+    const colorCounts: Record<string, number> = {};
+    for (const row of interactiveGrid) {
+      for (const color of row) {
+        if (color && color !== currentPuzzle.targetColor) {
+          colorCounts[color] = (colorCounts[color] || 0) + 1;
+        }
+      }
     }
 
-    const firstLockedCell = lockedCells.values().next().value;
-    if (typeof firstLockedCell !== 'string') {
-      return false;
-    }
-
-    const [rowStr, colStr] = firstLockedCell.split(',');
-    const row = Number.parseInt(rowStr, 10);
-    const col = Number.parseInt(colStr, 10);
-    const lockedColor = interactiveGrid[row]?.[col];
-
-    return Boolean(lockedColor) && lockedColor !== currentPuzzle.targetColor;
+    return Object.values(colorCounts).some(count => count >= 4);
   }, [
     isSolved,
     isTryLost,
-    lockedCells,
+    userMoveCount,
     interactiveGrid,
     currentPuzzle.targetColor
   ]);
@@ -134,27 +130,30 @@ const TutorialTryPhase: React.FC<TutorialTryPhaseProps> = ({ getColorCSS }) => {
     <div className="tutorial-try-phase">
       <div className="tutorial-phase-header tutorial-phase-header--try">
         <h2 className="tutorial-phase-title">{TRY_PHASE_MESSAGES.title}</h2>
-        <p className="tutorial-phase-message tutorial-try-goal-copy">
-          Turn all tiles <span className="tutorial-try-goal-color">{targetColorNameLower}</span>
-        </p>
       </div>
 
-      <div className="tutorial-try-metadata">
+      <div className="tutorial-try-metadata tutorial-try-metadata--compact">
         <div className="tutorial-try-meta-row">
-          <span className="tutorial-try-meta-label">Target:</span>
+          <span className="tutorial-try-meta-label tutorial-try-meta-label--compact">Target:</span>
           <span
-            className="tutorial-target-color tutorial-target-color--dot"
+            className="tutorial-target-color tutorial-target-color--dot tutorial-target-color--small"
             style={{ backgroundColor: getColorCSS(currentPuzzle.targetColor) }}
             aria-hidden="true"
           />
-          <span className="tutorial-target-value">{targetColorNameTitle}</span>
+          <span className="tutorial-target-value tutorial-target-value--compact">{targetColorNameTitle}</span>
         </div>
         <div className="tutorial-try-meta-row">
-          <span className="tutorial-try-meta-label">Goal:</span>
-          <span className="tutorial-try-goal-value">{currentPuzzle.goalMoves}</span>
-          <span className="tutorial-try-goal-unit">moves</span>
+          <span className="tutorial-try-meta-label tutorial-try-meta-label--compact">Goal:</span>
+          <span className="tutorial-try-goal-value tutorial-try-goal-value--compact">{currentPuzzle.goalMoves}</span>
+          <span className="tutorial-try-goal-unit tutorial-try-goal-unit--compact">moves</span>
         </div>
       </div>
+
+      {userMoveCount === 0 && !showColorPicker && (
+        <div className="tutorial-try-note">
+          Our bot sets a goal for each puzzle. Try solving in {currentPuzzle.goalMoves} moves or less!
+        </div>
+      )}
 
       {(isSolved || showWarning) && (
         <div className={`tutorial-try-status ${isSolved ? 'tutorial-try-status--solved' : 'tutorial-try-status--warning'}`}>
@@ -167,7 +166,7 @@ const TutorialTryPhase: React.FC<TutorialTryPhaseProps> = ({ getColorCSS }) => {
                 <span>Careful!</span>
               </p>
               <p className="tutorial-try-status-message">
-                Locking too many non-{targetColorNameLower} tiles will make you lose!
+                Locking more than half the board in non-{targetColorNameLower} is a loss.
               </p>
             </>
           )}
@@ -199,8 +198,6 @@ const TutorialTryPhase: React.FC<TutorialTryPhaseProps> = ({ getColorCSS }) => {
           />
         </div>
       </div>
-
-      <p className="tutorial-try-instruction">{TRY_PHASE_MESSAGES.message}</p>
 
       <div className="tutorial-try-moves">
         <div className="tutorial-try-moves-value">{userMoveCount}</div>

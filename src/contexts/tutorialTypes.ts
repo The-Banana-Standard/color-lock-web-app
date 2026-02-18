@@ -1,7 +1,7 @@
 /**
  * Tutorial Types and Interfaces
  *
- * Defines the state machine enums and data model for the "Watch -> Try -> Compare -> Ready" tutorial flow.
+ * Defines the state machine enums and data model for the "Watch -> Try -> Ready" tutorial flow.
  */
 
 import { TileColor } from '../types';
@@ -16,22 +16,45 @@ import { TileColor } from '../types';
 export enum TutorialPhase {
   Watch = 'watch',
   Try = 'try',
-  Compare = 'compare',
   Ready = 'ready',
   Complete = 'complete'
 }
 
 /**
- * Watch phase sub-states for the 4-move demo sequence.
- * The user advances each step manually with Start/Next.
+ * Watch phase top-level sub-states.
+ * PreIntro shows the completed puzzle; StartingBoard is the interactive guided demo.
  */
 export enum WatchStepState {
-  Intro = 0,
-  Move1 = 1,
-  Move2 = 2,
-  Move3 = 3,
-  Move4 = 4,
-  Win = 5
+  PreIntro = 'preIntro',
+  StartingBoard = 'startingBoard'
+}
+
+/**
+ * Sub-phases within the StartingBoard interactive demo.
+ *
+ * Phase names reference iOS color names for cross-platform parity.
+ * The web grid has different colors at those positions -- the names are
+ * just identifiers, not descriptions of what the user sees.
+ *
+ * Move 1: Tap purple tile at [2,0] -> change to blue
+ * Move 2: Tap green tile at [1,2] -> change to yellow ("WaitingForPurpleTap" in iOS naming)
+ * Move 3: Tap blue tile at [1,0] -> change to red ("WaitingForBlueTap")
+ * Move 4: Tap yellow tile at [0,0] -> change to red ("WaitingForYellowTap")
+ */
+export enum StartingBoardPhase {
+  Transitioning = 'transitioning',
+  WaitingForTileTap = 'waitingForTileTap',
+  PickerOpen = 'pickerOpen',
+  ResultShown = 'resultShown',
+  WaitingForPurpleTap = 'waitingForPurpleTap',
+  PurplePickerOpen = 'purplePickerOpen',
+  PurpleResultShown = 'purpleResultShown',
+  WaitingForBlueTap = 'waitingForBlueTap',
+  BluePickerOpen = 'bluePickerOpen',
+  BlueResultShown = 'blueResultShown',
+  WaitingForYellowTap = 'waitingForYellowTap',
+  YellowPickerOpen = 'yellowPickerOpen',
+  PuzzleCompleted = 'puzzleCompleted'
 }
 
 // ===========================================
@@ -110,6 +133,18 @@ export interface TutorialState {
 
   /** Whether user has completed tutorial before */
   hasCompletedBefore: boolean;
+
+  /** Sub-phase within StartingBoard interactive demo */
+  startingBoardPhase: StartingBoardPhase;
+
+  /** Whether the demo color picker is visible */
+  showDemoPicker: boolean;
+
+  /** Whether the tile spin transition is active */
+  isTransitioningToStartingBoard: boolean;
+
+  /** Whether the post-transition header should be visible */
+  showPostTransitionHeader: boolean;
 }
 
 /**
@@ -119,7 +154,6 @@ export type TutorialAction =
   | { type: 'OPEN_TUTORIAL' }
   | { type: 'CLOSE_TUTORIAL' }
   | { type: 'START_WATCH_PHASE' }
-  | { type: 'ADVANCE_WATCH_STEP' }
   | { type: 'SET_WATCH_STEP'; step: WatchStepState }
   | { type: 'START_TRY_PHASE' }
   | { type: 'NEXT_TRY_PUZZLE' }
@@ -127,7 +161,6 @@ export type TutorialAction =
   | { type: 'SELECT_TILE'; position: GridPosition }
   | { type: 'DESELECT_TILE' }
   | { type: 'APPLY_COLOR'; color: TileColor }
-  | { type: 'START_COMPARE_PHASE' }
   | { type: 'START_READY_PHASE' }
   | { type: 'COMPLETE_TUTORIAL' }
   | { type: 'RESET_FOR_REPLAY' }
@@ -138,7 +171,14 @@ export type TutorialAction =
   | { type: 'HIDE_SKIP_CONFIRMATION' }
   | { type: 'SHOW_SOFT_FAIL_WARNING' }
   | { type: 'HIDE_SOFT_FAIL_WARNING' }
-  | { type: 'SET_SOLVED' };
+  | { type: 'SET_SOLVED' }
+  | { type: 'SET_STARTING_BOARD_PHASE'; phase: StartingBoardPhase }
+  | { type: 'HANDLE_DEMO_TILE_TAP'; row: number; col: number }
+  | { type: 'HANDLE_DEMO_PICKER_SELECT'; color: TileColor }
+  | { type: 'SET_DEMO_PICKER_VISIBLE'; visible: boolean }
+  | { type: 'SET_TRANSITIONING_TO_STARTING_BOARD'; transitioning: boolean }
+  | { type: 'SET_POST_TRANSITION_HEADER'; visible: boolean }
+  | { type: 'RESET_WATCH_PHASE' };
 
 /**
  * Context value provided to consumers
@@ -153,11 +193,9 @@ export interface TutorialContextValue {
 
   // Phase navigation
   startWatchPhase: () => void;
-  advanceWatchStep: () => void;
   startTryPhase: () => void;
   nextTryPuzzle: () => void;
   resetCurrentTryPuzzle: () => void;
-  startComparePhase: () => void;
   startReadyPhase: () => void;
   completeTutorial: () => void;
   resetForReplay: () => void;
@@ -181,4 +219,14 @@ export interface TutorialContextValue {
   // Helper getters
   getCurrentMoveIndex: () => number;
   isWatchPhaseComplete: () => boolean;
+
+  // Interactive watch demo
+  handleDemoTileTap: (row: number, col: number) => void;
+  handleDemoPickerSelect: (color: TileColor) => void;
+  resetWatchPhase: () => void;
+  setStartingBoardPhase: (phase: StartingBoardPhase) => void;
+  setTransitioningToStartingBoard: (transitioning: boolean) => void;
+  setPostTransitionHeader: (visible: boolean) => void;
+  updateDemoGrid: (grid: TileColor[][], lockedCells: Set<string>) => void;
+  setWatchStep: (step: WatchStepState) => void;
 }

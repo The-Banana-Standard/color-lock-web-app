@@ -1,0 +1,34 @@
+{
+  "agents": {
+    "feature-analyzer": {
+      "calls": 1,
+      "last": "2026-02-17",
+      "models": {
+        "opus": 1,
+        "sonnet": 0
+      }
+    },
+    "code-architect": {
+      "calls": 1,
+      "last": "2026-02-17",
+      "models": {
+        "opus": 1,
+        "sonnet": 0
+      }
+    },
+    "web-developer": {
+      "calls": 1,
+      "last": "2026-02-17",
+      "models": {
+        "opus": 1,
+        "sonnet": 0
+      }
+    }
+  },
+  "commands": {
+    "port": {
+      "runs": 1,
+      "last": "2026-02-17"
+    }
+  }
+}

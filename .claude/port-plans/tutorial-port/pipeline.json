@@ -1,0 +1,17 @@
+{
+  "feature": "tutorial",
+  "slug": "tutorial-port",
+  "source": "~/Desktop/Projects/color-lock",
+  "sourceStack": "iOS/Swift",
+  "target": "~/Desktop/Projects/color-lock-web-app",
+  "targetStack": "React/TypeScript",
+  "currentStage": "ANALYZE",
+  "status": "in-progress",
+  "stages": {
+    "ANALYZE": { "status": "in-progress" },
+    "PLAN": { "status": "pending" },
+    "IMPLEMENT": { "status": "pending" },
+    "VERIFY": { "status": "pending" }
+  },
+  "createdAt": "2026-02-17"
+}

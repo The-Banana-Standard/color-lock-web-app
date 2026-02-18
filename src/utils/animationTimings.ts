@@ -98,3 +98,33 @@ export function getAdjustedDuration(duration: number): number {
 export function getAdjustedDelay(delay: number): number {
   return prefersReducedMotion() ? Math.min(delay, 100) : delay;
 }
+
+// ===========================================
+// WATCH PHASE INTERACTIVE DEMO
+// ===========================================
+
+/** Duration of each tile's 3D Y-axis rotation during grid transition */
+export const TILE_SPIN_DURATION = 600; // ms
+
+/** Stagger delay between tiles (diagonal cascade: delay = (row + col) * STAGGER) */
+export const TILE_STAGGER_DELAY = 60; // ms
+
+/** Lock overlay fade duration (fade in/out) */
+export const TILE_LOCK_FADE_DURATION = 1000; // ms
+
+/** Delay after spin completes before re-locking largest region */
+export const TILE_RELOCK_DELAY = 150; // ms
+
+/** Duration for post-transition header fade-in */
+export const HEADER_FADE_IN_DURATION = 1000; // ms
+
+/** Delay after color applied before updating locks and showing result */
+export const DEMO_RESULT_DELAY = 400; // ms
+
+/** Delay showing result card before auto-advancing to next waitingFor* phase */
+export const DEMO_RESULT_SHOW_MOVE1 = 2500; // ms (after purple->blue, explain locks)
+export const DEMO_RESULT_SHOW_MOVE2 = 2000; // ms (after green->yellow)
+export const DEMO_RESULT_SHOW_MOVE3 = 1500; // ms (after blue->red)
+
+/** Debounce interval for rapid tap prevention */
+export const DEMO_DEBOUNCE_INTERVAL = 300; // ms

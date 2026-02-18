@@ -15,7 +15,6 @@ import {
 } from '../../contexts/TutorialContext';
 import TutorialWatchPhase from './TutorialWatchPhase';
 import TutorialTryPhase from './TutorialTryPhase';
-import TutorialComparePhase from './TutorialComparePhase';
 import TutorialReadyPhase from './TutorialReadyPhase';
 import SkipConfirmationModal from './SkipConfirmationModal';
 
@@ -71,8 +70,6 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ getColorCSS }) => {
         return <TutorialWatchPhase getColorCSS={getColorCSS} />;
       case TutorialPhase.Try:
         return <TutorialTryPhase getColorCSS={getColorCSS} />;
-      case TutorialPhase.Compare:
-        return <TutorialComparePhase getColorCSS={getColorCSS} />;
       case TutorialPhase.Ready:
         return <TutorialReadyPhase getColorCSS={getColorCSS} />;
       default:

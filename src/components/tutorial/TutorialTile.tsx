@@ -35,6 +35,10 @@ interface TutorialTileProps {
   size?: number;
   /** Color used for highlight border */
   highlightColor?: string;
+  /** Whether this tile should play the spin animation */
+  isSpinning?: boolean;
+  /** Stagger delay for the spin (ms) */
+  spinDelay?: number;
 }
 
 const TutorialTile: React.FC<TutorialTileProps> = ({
@@ -48,7 +52,9 @@ const TutorialTile: React.FC<TutorialTileProps> = ({
   getColorCSS,
   interactive = true,
   size = 62,
-  highlightColor
+  highlightColor,
+  isSpinning = false,
+  spinDelay = 0
 }) => {
   const handleClick = () => {
     if (interactive && onClick && !isLocked) {
@@ -68,6 +74,7 @@ const TutorialTile: React.FC<TutorialTileProps> = ({
   if (isHighlighted) classes.push('tutorial-tile--highlighted');
   if (isSelected) classes.push('tutorial-tile--selected');
   if (!interactive || isLocked) classes.push('tutorial-tile--disabled');
+  if (isSpinning) classes.push('tutorial-tile--spinning');
 
   const style: React.CSSProperties = {
     backgroundColor: getColorCSS(color),
@@ -76,6 +83,9 @@ const TutorialTile: React.FC<TutorialTileProps> = ({
   };
   if (highlightColor) {
     (style as React.CSSProperties & Record<string, string>)['--tutorial-highlight-color'] = highlightColor;
+  }
+  if (isSpinning) {
+    (style as React.CSSProperties & Record<string, string>)['--spin-delay'] = `${spinDelay}ms`;
   }
 
   return (

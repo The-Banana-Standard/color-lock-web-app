@@ -114,6 +114,23 @@ const GameContainer = () => {
   // Tutorial context - new API
   const { state: tutorialState, openTutorial } = useTutorialContext();
 
+  // Auto-show tutorial for first-time users
+  useEffect(() => {
+    const hasCompleted = localStorage.getItem('colorlock_tutorial_completed') === 'true';
+    const hasLaunched = localStorage.getItem('colorlock_has_launched') === 'true';
+
+    if (!hasLaunched) {
+      localStorage.setItem('colorlock_has_launched', 'true');
+      if (!hasCompleted) {
+        // Small delay to let the game UI render first
+        const timer = setTimeout(() => {
+          openTutorial();
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [openTutorial]);
+
   // Auth context
   const { isGuest } = useAuth();
 
