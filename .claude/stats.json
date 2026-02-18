@@ -23,6 +23,14 @@
         "opus": 1,
         "sonnet": 0
       }
+    },
+    "Explore": {
+      "calls": 2,
+      "last": "2026-02-18",
+      "models": {
+        "opus": 1,
+        "sonnet": 1
+      }
     }
   },
   "commands": {

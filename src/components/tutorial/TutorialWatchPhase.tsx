@@ -487,7 +487,8 @@ const TutorialWatchPhase: React.FC<TutorialWatchPhaseProps> = ({ getColorCSS }) 
         className="tutorial-watch-hint-container"
         style={{
           opacity: isPreIntro && !isTransitioningToStartingBoard ? 1 : 0,
-          transition: 'opacity 0.3s ease',
+          visibility: isPreIntro && !isTransitioningToStartingBoard ? 'visible' : 'hidden',
+          transition: 'opacity 0.3s ease, visibility 0.3s ease',
           pointerEvents: isPreIntro ? 'auto' : 'none'
         }}
       >
@@ -499,8 +500,9 @@ const TutorialWatchPhase: React.FC<TutorialWatchPhaseProps> = ({ getColorCSS }) 
         className="tutorial-phase-actions tutorial-phase-actions--watch"
         style={{
           opacity: showButton ? 1 : 0,
+          visibility: showButton ? 'visible' : 'hidden',
           pointerEvents: showButton ? 'auto' : 'none',
-          transition: 'opacity 0.3s ease'
+          transition: 'opacity 0.3s ease, visibility 0.3s ease'
         }}
       >
         <button

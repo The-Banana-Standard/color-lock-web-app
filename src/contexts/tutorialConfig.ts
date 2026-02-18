@@ -201,7 +201,7 @@ export const TUTORIAL_TRY_PUZZLES: TutorialTryPuzzleConfig[] = [
   {
     id: 'tutorial-puzzle-2',
     targetColor: TileColor.Blue,
-    goalMoves: 5,
+    goalMoves: 4,
     startingGrid: [
       [TileColor.Blue, TileColor.Blue, TileColor.Green],
       [TileColor.Blue, TileColor.Purple, TileColor.Orange],
@@ -212,7 +212,7 @@ export const TUTORIAL_TRY_PUZZLES: TutorialTryPuzzleConfig[] = [
   {
     id: 'tutorial-puzzle-3',
     targetColor: TileColor.Green,
-    goalMoves: 6,
+    goalMoves: 4,
     startingGrid: [
       [TileColor.Blue, TileColor.Green, TileColor.Orange],
       [TileColor.Blue, TileColor.Orange, TileColor.Red],
