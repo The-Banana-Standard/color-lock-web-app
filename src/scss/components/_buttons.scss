@@ -244,6 +244,11 @@
   svg { color: $gradient-pink-start; fill: $gradient-pink-start; }
 }
 
+.icon-button--gold {
+  @extend %icon-button-base;
+  svg { color: $gradient-gold-start; fill: $gradient-gold-start; }
+}
+
 // ===========================================
 // SHARE STATS BUTTON
 // ===========================================

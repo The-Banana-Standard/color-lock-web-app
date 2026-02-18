@@ -244,117 +244,13 @@ input:checked + .toggle-slider:before {
   }
 }
 
-// --- Difficulty Indicator Styles ---
-.difficulty-indicator-container {
-  position: absolute;
-  top: $spacing-md;
-  right: $spacing-md;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: $color-text-secondary;
+// --- Game Difficulty Switcher (in-game variant) ---
+.game-difficulty-switcher {
+  margin-top: $spacing-sm;
+  margin-bottom: 0;
 
-  @include dark-mode {
-    color: $color-light-taupe;
-  }
-
-  @include small-mobile {
-    top: auto;
-    bottom: $spacing-md;
-  }
-}
-
-.difficulty-text {
-  font-size: 10px;
-  font-weight: 300;
-  text-transform: lowercase;
-  margin-bottom: 4px;
-  letter-spacing: 0.5px;
-}
-
-.difficulty-columns {
-  display: flex;
-  gap: 3px;
-}
-
-.difficulty-column {
-  width: 6px;
-  height: 16px;
-  border-radius: 3px;
-  border: 1px solid $color-text-secondary;
-  background-color: transparent;
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  box-sizing: border-box;
-
-  /* Button resets */
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-
-  /* Improved focus state without outline */
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
-    transform: scale(1.1);
-  }
-
-  &:hover {
-    opacity: 0.8;
-  }
-
-  @include dark-mode {
-    border-color: $color-light-taupe;
-
-    &:focus {
-      box-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
-    }
-  }
-}
-
-/* Progressive difficulty indicators */
-/* Easy difficulty - only first column active */
-.difficulty-indicator-container.difficulty-easy {
-  .difficulty-column.easy {
-    border: none;
-    background: linear-gradient(to bottom, #afc053, #b9c255); /* Green gradient */
-  }
-}
-
-/* Medium difficulty - first and second columns active */
-.difficulty-indicator-container.difficulty-medium {
-  .difficulty-column.easy,
-  .difficulty-column.medium {
-    border: none;
-  }
-
-  .difficulty-column.easy {
-    background: linear-gradient(to bottom, #afc053, #b9c255); /* Green gradient */
-  }
-
-  .difficulty-column.medium {
-    background: linear-gradient(to bottom, #fb997f, #fea474); /* Orange gradient */
-  }
-}
-
-/* Hard difficulty - all columns active */
-.difficulty-indicator-container.difficulty-hard {
-  .difficulty-column {
-    border: none;
-  }
-
-  .difficulty-column.easy {
-    background: linear-gradient(to bottom, #afc053, #b9c255); /* Green gradient */
-  }
-
-  .difficulty-column.medium {
-    background: linear-gradient(to bottom, #fb997f, #fea474); /* Orange gradient */
-  }
-
-  .difficulty-column.hard {
-    background: linear-gradient(to bottom, #d16381, #db757f); /* Red gradient */
+  .difficulty-option {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
   }
 } 

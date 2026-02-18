@@ -2,7 +2,7 @@ import React, { useState, useEffect, createContext, useContext, useRef, Suspense
 import './scss/main.scss';
 import ReactConfetti from 'react-confetti';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faGear, faTrophy, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faGear, faTrophy, faInfoCircle, faBolt } from '@fortawesome/free-solid-svg-icons';
 
 // Types
 import { AppSettings, DifficultyLevel } from './types/settings';
@@ -234,6 +234,9 @@ const GameContainer = () => {
         </button>
         <button className="icon-button icon-button--pink" onClick={handleInfoClickAction} aria-label="Tutorial">
           <FontAwesomeIcon icon={faInfoCircle} />
+        </button>
+        <button className="icon-button icon-button--gold" onClick={handleBotSolutionClick} disabled={isAutoSolving} aria-label="Bot Solution">
+          <FontAwesomeIcon icon={faBolt} />
         </button>
       </div>
 

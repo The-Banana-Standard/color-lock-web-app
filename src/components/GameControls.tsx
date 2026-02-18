@@ -1,6 +1,6 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGear, faTrophy, faInfoCircle, faHome, faBrain } from '@fortawesome/free-solid-svg-icons';
+import { faGear, faTrophy, faInfoCircle, faHome, faBolt } from '@fortawesome/free-solid-svg-icons';
 import { TileColor, DailyPuzzle } from '../types';
 import { AppSettings, DifficultyLevel } from '../types/settings';
 import { useTutorialContext } from '../contexts/TutorialContext';
@@ -52,12 +52,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
   // Use the difficulty level from settings with a fallback to prevent errors
   const currentDifficulty = settings?.difficultyLevel || DifficultyLevel.Medium;
-  
-  // Handle difficulty column click
-  const handleDifficultyClick = (difficulty: DifficultyLevel) => {
-    onDifficultyChange(difficulty);
-  };
-  
+
   return (
     <div className="top-card">
       {/* Hamburger Menu Wrapper (Mobile Only) */}
@@ -76,6 +71,15 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <button className="hamburger-menu-item" onClick={onInfoClick}>
             <FontAwesomeIcon icon={faInfoCircle} /> Tutorial
           </button>
+          {showHintButton && (
+            <button
+              className="hamburger-menu-item"
+              onClick={onBotSolutionClick}
+              disabled={isAutoSolving}
+            >
+              <FontAwesomeIcon icon={faBolt} /> {isAutoSolving ? 'Solving...' : 'Bot Solution'}
+            </button>
+          )}
           {isGuest && (
             <div className="hamburger-menu-item-signup">
               {/* Pass toggleMenu to onClose if needed */}
@@ -85,34 +89,6 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         </HamburgerMenu>
       </div>
 
-      {/* Difficulty Indicator (Desktop/Tablet) */}
-      {/* Only show outside tutorial mode */}
-      {!isTutorialOpen && (
-        <div className={`difficulty-indicator-container difficulty-${currentDifficulty}`}>
-          <span className="difficulty-text">difficulty</span>
-          <div className="difficulty-columns">
-            <button 
-              className="difficulty-column easy"
-              title="Set to Easy Difficulty"
-              aria-label={`Difficulty: Easy ${currentDifficulty === DifficultyLevel.Easy ? '(Active)' : '(Inactive)'}`}
-              onClick={() => handleDifficultyClick(DifficultyLevel.Easy)}
-            ></button>
-            <button 
-              className="difficulty-column medium"
-              title="Set to Medium Difficulty"
-              aria-label={`Difficulty: Medium ${currentDifficulty === DifficultyLevel.Medium ? '(Active)' : '(Inactive)'}`}
-              onClick={() => handleDifficultyClick(DifficultyLevel.Medium)}
-            ></button>
-            <button 
-              className="difficulty-column hard"
-              title="Set to Hard Difficulty"
-              aria-label={`Difficulty: Hard ${currentDifficulty === DifficultyLevel.Hard ? '(Active)' : '(Inactive)'}`}
-              onClick={() => handleDifficultyClick(DifficultyLevel.Hard)}
-            ></button>
-          </div>
-        </div>
-      )}
-
       {/* Top Card Content */}
       <div className="top-card-content">
         <h1>
@@ -120,23 +96,37 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         </h1>
         <div className="target-row">
           <span>Target:</span>
-          <div 
-            className="target-circle" 
-            style={{ backgroundColor: puzzle.targetColor ? getColorCSS(puzzle.targetColor) : '#ffffff' }} 
+          <div
+            className="target-circle"
+            style={{ backgroundColor: puzzle.targetColor ? getColorCSS(puzzle.targetColor) : '#ffffff' }}
           />
         </div>
         <div className="goal-row">
           <span>Goal: {puzzle.algoScore}</span>
           <span>Moves: {puzzle.userMovesUsed}</span>
         </div>
-        {showHintButton && (
-          <button
-            className="hint-button"
-            onClick={onBotSolutionClick}
-            disabled={isAutoSolving}
-          >
-            {isAutoSolving ? 'Solving...' : 'Bot Solution'}
-          </button>
+        {/* Difficulty Switcher - same style as landing screen */}
+        {!isTutorialOpen && (
+          <div className="difficulty-switcher game-difficulty-switcher">
+            <button
+              className={`difficulty-option easy ${currentDifficulty === DifficultyLevel.Easy ? 'active' : ''}`}
+              onClick={() => onDifficultyChange(DifficultyLevel.Easy)}
+            >
+              Easy
+            </button>
+            <button
+              className={`difficulty-option medium ${currentDifficulty === DifficultyLevel.Medium ? 'active' : ''}`}
+              onClick={() => onDifficultyChange(DifficultyLevel.Medium)}
+            >
+              Medium
+            </button>
+            <button
+              className={`difficulty-option hard ${currentDifficulty === DifficultyLevel.Hard ? 'active' : ''}`}
+              onClick={() => onDifficultyChange(DifficultyLevel.Hard)}
+            >
+              Hard
+            </button>
+          </div>
         )}
       </div>
     </div>
