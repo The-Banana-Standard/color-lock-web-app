@@ -133,7 +133,7 @@ export const INSTRUCTION_CARDS: Partial<Record<StartingBoardPhase, InstructionCa
     color: '#e07766' // coral
   },
   [StartingBoardPhase.PickerOpen]: {
-    text: 'Turning this tile red connects it with the adjacent red tiles, creating a group of 4.',
+    text: 'Turning this tile red connects it with the surrounding red tiles, creating a new group of 4.',
     color: '#d4a843' // gold
   },
   [StartingBoardPhase.ResultShown]: {
@@ -201,7 +201,7 @@ export const TUTORIAL_TRY_PUZZLES: TutorialTryPuzzleConfig[] = [
   {
     id: 'tutorial-puzzle-2',
     targetColor: TileColor.Blue,
-    goalMoves: 4,
+    goalMoves: 5,
     startingGrid: [
       [TileColor.Blue, TileColor.Blue, TileColor.Green],
       [TileColor.Blue, TileColor.Purple, TileColor.Orange],
@@ -212,7 +212,7 @@ export const TUTORIAL_TRY_PUZZLES: TutorialTryPuzzleConfig[] = [
   {
     id: 'tutorial-puzzle-3',
     targetColor: TileColor.Green,
-    goalMoves: 4,
+    goalMoves: 6,
     startingGrid: [
       [TileColor.Blue, TileColor.Green, TileColor.Orange],
       [TileColor.Blue, TileColor.Orange, TileColor.Red],
